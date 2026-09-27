@@ -95,14 +95,20 @@ body.locked, body.locked *{ cursor:none !important; }
 .cmd.empty{ background:transparent; border:1px dashed #262a2f; cursor:default; }
 
 /* selection panel content */
-.portrait{ width:96px; flex:none; display:flex; flex-direction:column; gap:6px; }
-.portrait .pic{ height:96px; display:grid; place-items:center; background:radial-gradient(circle at 50% 40%,#23313a,#0d0e10 70%); border:1px solid #2e3237; }
+.portrait{ width:120px; flex:none; display:flex; flex-direction:column; gap:6px; }
+.portrait .pic{ height:120px; position:relative; overflow:hidden; display:grid; place-items:center; background:radial-gradient(circle at 50% 40%,#23313a,#0d0e10 70%); border:1px solid #2e3237; }
 .portrait .pic svg{ width:58px; height:58px; fill:none; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; }
 .hpbar{ height:7px; background:#26090a; border:1px solid #000; position:relative; }
 .hpbar i{ position:absolute; inset:0 auto 0 0; background:var(--good); }
 .hptxt{ font-family:'Barlow Condensed'; font-size:14px; text-align:center; color:var(--dim); }
 .info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
 .info h2{ margin:0; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:26px; line-height:1; letter-spacing:.01em; }
+.portrait .pic canvas.pcan{ position:absolute; inset:0; width:100%; height:100%; }
+.portrait .pic::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(120,200,255,.05) 0 1px,transparent 1px 3px); box-shadow:inset 0 0 18px rgba(0,0,0,.7); }
+.info .rank{ font-family:'Barlow Condensed'; font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--lamp); margin-top:-2px; }
+.vrow .vn small{ color:var(--dim); font-size:11.5px; margin-left:4px; }
+#subtitle{ position:fixed; left:50%; bottom:calc(var(--console-h) + 22px); transform:translate(-50%,6px); z-index:7; max-width:min(640px,90vw); padding:7px 14px; background:rgba(8,9,11,.82); border-left:3px solid var(--lamp); font-size:15px; opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; }
+#subtitle.show{ opacity:1; transform:translate(-50%,0); } #subtitle b{ color:var(--lamp); font-family:'Barlow Condensed'; font-size:16px; letter-spacing:.02em; }
 .info .sub{ color:var(--dim); font-size:13px; line-height:1.35; max-width:60ch; }
 .stats{ display:flex; gap:18px; flex-wrap:wrap; }
 .stat{ display:flex; flex-direction:column; }
@@ -315,6 +321,7 @@ body.locked, body.locked *{ cursor:none !important; }
 </div>
 
 <div id="tip"></div>
+<div id="subtitle" aria-live="polite"></div>
 <div id="quick" aria-label="Quick select">
   <button class="qbtn" data-k="workers" title="Select all workers (F1). Press again to jump to them."><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6zM11 7L4 14l3 3 7-7"/><path d="M4 20l3-3"/></svg>Workers<b id="q-workers">0</b></button>
   <button class="qbtn" data-k="army" title="Select your whole army (F2). Press again to jump to it."><svg viewBox="0 0 24 24"><path d="M5 19L19 5M14 5h5v5M5 14l5 5"/></svg>Army<b id="q-army">0</b></button>
@@ -322,6 +329,7 @@ body.locked, body.locked *{ cursor:none !important; }
 </div>
 <div id="optMenu" role="dialog" aria-label="Options"><h4>Options</h4>
   <label><input type="checkbox" id="opt-vlist"><span>List selected units vertically<small>Shows a row per unit with its name and health instead of the icon grid.</small></span></label>
+  <label><input type="checkbox" id="opt-voice"><span>Unit voices<small>Your units speak when selected, ordered, trained or hurt. Lines also appear as subtitles.</small></span></label>
   <label><input type="checkbox" id="opt-edge"><span>Edge scrolling<small>Pan when the pointer touches the screen edge. Arrow keys, middle-drag and the minimap always work.</small></span></label>
 </div>
 <div id="pauseNote">Paused</div>
@@ -746,8 +754,8 @@ const fogTex=new THREE.DataTexture(fogData,6*F,F,THREE.RGBAFormat); fogTex.magFi
 /* subsurface map: what scanning has learned about the rock below, painted over the terrain as a colour gradient */
 const subData=new Uint8Array(6*F*F*4);
 const subTex=new THREE.DataTexture(subData,6*F,F,THREE.RGBAFormat); subTex.magFilter=THREE.LinearFilter; subTex.minFilter=THREE.LinearFilter; subTex.needsUpdate=true;
-const fogU={ uFogTex:{value:fogTex}, uSubTex:{value:subTex}, uSubStr:{value:0.5}, uTime:{value:0} };
-const FOG_GLSL=`uniform sampler2D uFogTex; uniform sampler2D uSubTex; uniform float uSubStr; uniform float uTime; varying vec3 vFogW;
+const fogU={ uFogTex:{value:fogTex}, uSubTex:{value:subTex}, uSubStr:{value:0.5}, uTime:{value:0}, uNoFog:{value:0} };
+const FOG_GLSL=`uniform sampler2D uFogTex; uniform sampler2D uSubTex; uniform float uSubStr; uniform float uTime; uniform float uNoFog; varying vec3 vFogW;
   float tH(vec3 p){ p=fract(p*0.3183099+vec3(0.1,0.2,0.3)); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
   float tN(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
     return mix(mix(mix(tH(i),tH(i+vec3(1,0,0)),f.x),mix(tH(i+vec3(0,1,0)),tH(i+vec3(1,1,0)),f.x),f.y),mix(mix(tH(i+vec3(0,0,1)),tH(i+vec3(1,0,1)),f.x),mix(tH(i+vec3(0,1,1)),tH(i+vec3(1,1,1)),f.x),f.y),f.z); }
@@ -760,7 +768,7 @@ const FOG_GLSL=`uniform sampler2D uFogTex; uniform sampler2D uSubTex; uniform fl
     return vec2((f+uv.x)/6.0, uv.y); }
   float fogLookup(vec3 p){ return texture2D(uFogTex, atlasUV(p)).r; }
   /* fog of war: what you can see now is full colour; ground you remember goes cold and grey; the unknown is near black */
-  vec3 applyFog(vec3 c, vec3 p){ float f=fogLookup(p)+(tN(p*1.1)-0.5)*0.16;
+  vec3 applyFog(vec3 c, vec3 p){ if(uNoFog>0.5) return c; float f=fogLookup(p)+(tN(p*1.1)-0.5)*0.16;
     float v=smoothstep(0.52,0.9,f), e=smoothstep(0.03,0.38,f);
     float l=dot(c,vec3(0.3,0.59,0.11)); vec3 mem=mix(vec3(l),c,0.3)*vec3(0.6,0.7,0.95)*0.5;
     vec3 r=mix(mem,c,v)*mix(0.2,1.0,e); r=mix(r*vec3(0.55,0.62,0.85),r,e);
@@ -773,7 +781,7 @@ const FOG_GLSL=`uniform sampler2D uFogTex; uniform sampler2D uSubTex; uniform fl
 `;
 function fogPatch(m, emisAttr){
   m.onBeforeCompile=(sh)=>{
-    sh.uniforms.uFogTex=fogU.uFogTex; sh.uniforms.uSubTex=fogU.uSubTex; sh.uniforms.uSubStr=fogU.uSubStr; sh.uniforms.uTime=fogU.uTime;
+    sh.uniforms.uFogTex=fogU.uFogTex; sh.uniforms.uNoFog=fogU.uNoFog; sh.uniforms.uSubTex=fogU.uSubTex; sh.uniforms.uSubStr=fogU.uSubStr; sh.uniforms.uTime=fogU.uTime;
     sh.vertexShader='varying vec3 vFogW;\n'+(emisAttr?'attribute float aEmis; varying float vEmis;\n':'')+sh.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
       vec4 fogWP=vec4(transformed,1.0);
       #ifdef USE_INSTANCING
@@ -782,7 +790,7 @@ function fogPatch(m, emisAttr){
       fogWP=modelMatrix*fogWP; vFogW=fogWP.xyz; ${emisAttr?'vEmis=aEmis;':''}`);
     sh.fragmentShader=FOG_GLSL+(emisAttr?'varying float vEmis;\n':'')+sh.fragmentShader
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n'+(emisAttr?'totalEmissiveRadiance += vColor.rgb * vEmis;':''))
-      .replace('#include <dithering_fragment>','#include <dithering_fragment>\n'+(emisAttr?' gl_FragColor.rgb = subBlend(gl_FragColor.rgb, vFogW);\n':'')+' gl_FragColor.rgb = applyFog(gl_FragColor.rgb, vFogW);'+'\n { float rim=pow(1.0-max(dot(normalize(vFogW),normalize(cameraPosition-vFogW)),0.0),3.0); gl_FragColor.rgb+=vec3(0.2,0.34,0.7)*rim*'+(emisAttr?'0.3':'0.22')+'; }');
+      .replace('#include <dithering_fragment>','#include <dithering_fragment>\n'+(emisAttr?' gl_FragColor.rgb = subBlend(gl_FragColor.rgb, vFogW);\n':'')+' gl_FragColor.rgb = applyFog(gl_FragColor.rgb, vFogW);'+'\n if(uNoFog<0.5){ float rim=pow(1.0-max(dot(normalize(vFogW),normalize(cameraPosition-vFogW)),0.0),3.0); gl_FragColor.rgb+=vec3(0.2,0.34,0.7)*rim*'+(emisAttr?'0.3':'0.22')+'; }');
   };
   if(emisAttr) m.customProgramCacheKey=()=>'emis';
   return m;
@@ -1495,7 +1503,7 @@ function eggTick(u,dt){ if(!(u.hatch>0)) return false; u.hatch-=dt; const e=u.eg
       const jl=isCeph(u), vd=isVoid(u); if(vd) voidBurst(q,up,8); else { spawnDebris(q,10,jl?0xc8f0ff:0xf1e6d0,1.2,0.7); for(let k=0;k<12;k++) dust.up(q,up,rr(0.3,1.2),rr(0,0.8),rr(0.6,1.2),0.12,0.3,jl?0.75:0.95,jl?0.9:0.92,jl?1:0.85,0.9,1,1); } sfx(vd?'hiss':jl?'blub':'cluck',u.pos); } return false; }
   return true; }
 function featherBurst(pos,up,n){ for(let k=0;k<n;k++) dust.up(pos,up,rr(0.5,2.5),rr(0.3,2.2),rr(1.2,2.4),0.1,0.22,0.95,0.93,0.88,0.9,0.6,1.4,0.3); }
-function reskin(e){ scene.remove(e.mesh); e._cl=false;
+function reskin(e){ scene.remove(e.mesh); e._cl=false; e.pname=null; if(portrait.forE===e) portrait.forE=null;
   if(e.kind==='unit'){ const {g,P:parts}=buildUnitModel(e.type,e.team); e.mesh=g; e.parts=parts; g.position.copy(e.pos); orient(g,e.p,e.fwd); scene.add(g); }
   else { const {g,P:parts}=buildBuildingModel(e.type,e.team); e.mesh=g; e.parts=parts; g.position.copy(e.pos); orient(g,e.p,e.fwd); if(!e.done) g.scale.y=0.05+0.95*e.prog; scene.add(g); } }
 function setRaces(r0,r1){ P[0].race=r0; P[1].race=r1; rebuildDefs(0); rebuildDefs(1); for(const u of units) reskin(u); for(const b of blds) reskin(b); }
@@ -2707,10 +2715,26 @@ function orderReturn(u,drop){ if(u.carry<=0) return; u.order={type:'mine',s:u.la
 /* =====================================================================
    Digging
    ===================================================================== */
+/* the deep zone under a cell may be dug if it lies in the apron of any site this team has core-drilled
+   (the rock around a lode often belongs to a neighbouring site's apron, and the pit has to widen through it) */
+function deepRight(c,team){ const o=digOwner[c]; if(o>=0 && sites[o].cored[team]) return true;
+  for(const q of sites) if(q.cored[team] && cdot(c,q.dir)>Math.cos((q.rReg+10)/R0)) return true; return false; }
+/* the terraced cone needed to reach the deep metal still left in a drilled site: required depth per cell */
+function coneNeed(s,team){ const cc=s._cone; if(cc && cc.v===mapVersion && cc.t===team) return cc.m;
+  const m=new Map(), inDig=s._digSet||(s._digSet=new Set(s.dig)); let top=0;
+  /* aim at the shallowest deep blocks first: a narrow cone reaches metal soonest, and it re-aims as blocks come out */
+  const seeds=[]; for(const c of s.cells){ for(let k=Math.max(depth[c],DEEP-1);k<DMAX;k++){ const x=mat[c*DMAX+k]; if(x===5||x===6){ seeds.push([c,k+1]); break; } } }
+  if(seeds.length){ let lo=1e9; for(const [c,n] of seeds) lo=Math.min(lo,n-depth[c]*0.5+gdc(c,s.dir)*0.15);
+    for(const [c,n] of seeds) if(n-depth[c]*0.5+gdc(c,s.dir)*0.15<=lo+1.2){ m.set(c,n); top=Math.max(top,n); } }
+  if(m.size){ let frontier=[...m.keys()];
+    while(frontier.length){ const next=[]; for(const c of frontier){ const r=m.get(c)-1; if(r<=0) continue;
+        for(let k=0;k<8;k++){ const n=nb[c*8+k]; if(n<0||!inDig.has(n)||ridge[n]) continue; if((m.get(n)||0)<r){ m.set(n,r); next.push(n); } } }
+      frontier=next; } }
+  s._cone={v:mapVersion,t:team,m}; return m; }
 function diggable(c,team=-1){
   const d=depth[c]; if(d>=DMAX || bld[c]>=0 || ridge[c]) return false;
-  if(d>=DEEP && team>=0){ const o=digOwner[c]; if(o<0 || !sites[o].cored[team]) return false; }
-  for(let k=0;k<8;k++){ const n=nb[c*8+k]; if(n<0||ridge[n]) continue; if(depth[n]<d) return false; }
+  if(d>=DEEP && team>=0 && !deepRight(c,team)) return false;
+  for(let k=0;k<8;k++){ const n=nb[c*8+k]; if(n<0||ridge[n]||bld[n]>=0) continue; if(depth[n]<d) return false; }
   return true;
 }
 const glints=new Map();
@@ -2730,6 +2754,13 @@ function pickDigCell(u,sid){
   const val=[]; for(const c of s.cells) if(colValue(c,lim)>0) val.push(c);
   if(!val.length) return -1;
   let best=-1, bs=1e9;
+  /* on a drilled site with deep metal left, dig only what the cone down to that metal needs, nearest the lode first */
+  if(s.cored[u.team] && s.deepLeft>0){ const need=coneNeed(s,u.team);
+    for(const [c,r] of need){ if(depth[c]>=r || !diggable(c,u.team) || (u.bad && u.bad.has(c))) continue;
+      let stand=false; for(let k=0;k<8;k++){ const n=nb[c*8+k]; if(n>=0&&passable(n)&&Math.abs(depth[n]-depth[c])<=1){ stand=true; break; } } if(!stand) continue;
+      const tm=topMat(c); const sc=-r*1.4+gdc(c,s.dir)*0.25+(claims.get(c)||0)*2.6+gdc(c,u.p)*0.15-(tm>0&&tm<NM?1.5:0);
+      if(sc<bs){ bs=sc; best=c; } }
+    if(best>=0) return best; }
   for(const c of s.dig){ if(!diggable(c,u.team) || (u.bad && u.bad.has(c))) continue;
     let stand=false; for(let k=0;k<8;k++){ const n=nb[c*8+k]; if(n>=0&&passable(n)&&Math.abs(depth[n]-depth[c])<=1){ stand=true; break; } } if(!stand) continue;
     const cv=colValue(c,lim), tm=topMat(c), drilled=s.cored[u.team];
@@ -2935,13 +2966,13 @@ function applyDamage(e,dmg,a){
   if(e.dead) return; if(a && e.kind==='bld' && a.def && a.def.bldMul) dmg*=a.def.bldMul; if(e.kind==='unit' && inkClouds.length && isCeph(e)) dmg*=inkMul(e); e.hp-=dmg; e.hitT=gameTime;
   if(e.kind==='unit' && e.hp>0 && isCeph(e)) inkUp(e);
   if(e.team===ME){ lastAlert=e.p.clone(); }
-  if(e.team===ME && gameTime-lastAttackAlert>18){ lastAttackAlert=gameTime; toast(e.kind==='bld'?`Your ${e.def.name.toLowerCase()} is under attack`:'Your crew is under attack','warn'); ping(e.pos,'#ff5b3a'); sfx('alert'); }
+  if(e.team===ME && gameTime-lastAttackAlert>18){ lastAttackAlert=gameTime; toast(e.kind==='bld'?`Your ${e.def.name.toLowerCase()} is under attack`:'Your crew is under attack','warn'); ping(e.pos,'#ff5b3a'); sfx('alert'); if(e.kind==='unit') voiceLine(e,'hurt',true); }
   if(e.kind==='unit' && a && isAlive(a) && e.def.dmg && canHit(e,a) && e.type!=='worker' && (e.order.type==='idle' || (e.order.type==='amove' && !e.order.eng))){ if(e.order.type==='amove') e.order.eng=a; else e.order={type:'attack',tgt:a,auto:true,home:e.p.clone()}; }
   if(aiTeams[e.team] && a && isAlive(a) && blds.some(b=>!b.dead&&b.team===e.team&&distB(e.p,b)<16)) AIS[e.team].threat={p:e.p.clone(),t:gameTime};
   if(e.hp<=0) kill(e,a);
 }
 function kill(e,a){
-  e.dead=true; if(a && P[a.team]) P[a.team].killed++; P[e.team].lost++; voidBounty(e,a);
+  e.dead=true; if(a && P[a.team]) P[a.team].killed++; if(a && a.kind==='unit') a.kills=(a.kills||0)+1; P[e.team].lost++; voidBounty(e,a);
   const V=e.team===ME || (e.kind==='bld'?seenBy(e,ME):vis[e.c]);
   if(e.kind==='unit'){ if(e.egg){ scene.remove(e.egg); e.egg=null; } if(V&&isFowl(e)){ featherBurst(e.pos.clone().addScaledVector(e.p,0.5),e.p,10+e.def.supply*4); sfx('squawk',e.pos); }
     if(V&&isVoid(e)){ voidBurst(e.pos.clone().addScaledVector(e.p,0.5),e.p,8+e.def.supply*3); sfx('shriek',e.pos); }
@@ -3085,7 +3116,7 @@ function spawnFrom(b,type){
   const tp=b.rally?b.rally.p:offsetDir(b.p,tangentToward(b.p,b.team?PB:EB),b.s);
   let best=-1, bd=1e9; for(const c of b.ring){ if(!passable(c)) continue; const d=gdc(c,tp); if(d<bd){ bd=d; best=c; } }
   if(best<0) best=nearestPassable(b.cells[0]);
-  const u=spawnUnit(type,b.team,cvec(best)); faceDir(u,tp,1); if(raceOf(b.team)==='fowl') layEgg(u); else if(raceOf(b.team)==='ceph') layJelly(u); else if(raceOf(b.team)==='void') layRift(u);
+  const u=spawnUnit(type,b.team,cvec(best)); if(b.team===ME) voiceLine(u,'ready'); faceDir(u,tp,1); if(raceOf(b.team)==='fowl') layEgg(u); else if(raceOf(b.team)==='ceph') layJelly(u); else if(raceOf(b.team)==='void') layRift(u);
   if(b.rally){ const r=b.rally;
     if(r.site>=0 && type==='worker') orderMine(u,r.site,-1);
     else if(r.tgt && isAlive(r.tgt) && r.tgt.team!==b.team) orderAttack(u,r.tgt);
@@ -3320,7 +3351,7 @@ const cam={ t:PB.clone(), h:tangentToward(PB,V3().set(0,1,0).add(PB)), dist:26, 
 const camTP=V3();
 const keys=new Set(); let mouseX=innerWidth/2, mouseY=innerHeight/2, mouseIn=false;
 /* player options, remembered in this browser */
-const opts={ vlist:false, edge:true }; try{ Object.assign(opts,JSON.parse(localStorage.getItem('andro-opts')||'{}')); }catch(e){}
+const opts={ vlist:false, edge:true, voice:true }; try{ Object.assign(opts,JSON.parse(localStorage.getItem('andro-opts')||'{}')); }catch(e){}
 function saveOpts(){ try{ localStorage.setItem('andro-opts',JSON.stringify(opts)); }catch(e){} }
 const PAN_EDGE=34, PAN_EDGE_B=26, PAN_EDGE_WIN=10; // edge zones in px: sides and top, a strip above the console, and the very bottom of the window
 let consoleTop=innerHeight-190;
@@ -3401,7 +3432,7 @@ const siteAt=(c)=> c>=0 && siteOf[c]>=0 && explored[c] ? sites[siteOf[c]] : null
    ===================================================================== */
 let mode=null, cardPage='main';
 const groups={};
-function setSel(list,site=-1){ sel=list.filter(e=>!e.dead); selSite=site; cardPage='main'; mode=null; clearGhost(); uiDirty=true; xrayDirty=true; if(sel.length) sfx('select'); }
+function setSel(list,site=-1){ sel=list.filter(e=>!e.dead); selSite=site; cardPage='main'; mode=null; clearGhost(); uiDirty=true; xrayDirty=true; if(sel.length) sfx('select'); const f=sel.find(x=>x.kind==='unit'&&x.team===ME); if(f&&started) voiceLine(f,'select'); }
 const ownUnits=()=>sel.filter(e=>e.team===ME&&e.kind==='unit'&&!e.dead);
 function formation(list,p,fn){
   const n=list.length, side=Math.ceil(Math.sqrt(n)), gap=0.95; const r=camRight(), f=tangentToward(p,_t3.copy(cam.h).add(p));
@@ -3420,7 +3451,8 @@ function smartCommand(sx,sy){
     if(b && b.def.trains){ const s=h.c>=0&&siteOf[h.c]>=0&&sites[siteOf[h.c]].revealed?siteOf[h.c]:-1; issue({t:'rally',b:b.id,p:v3a(h.p),s,e:h.unit&&h.unit.team!==ME?h.unit.id:0}); marker(h.p,0xf2b04a); sfx('order'); }
     return; }
   const enemy=h.unit&&h.unit.team!==ME?h.unit:(h.bld&&h.bld.team!==ME?h.bld:null);
-  if(enemy){ issue({t:'atk',u:ids(own),e:enemy.id}); marker(enemy.p,0xff5b3a); sfx('order'); return; }
+  if(enemy){ issue({t:'atk',u:ids(own),e:enemy.id}); marker(enemy.p,0xff5b3a); sfx('order'); voiceLine(own.find(u=>u.def.dmg)||own[0],'attack'); return; }
+  voiceLine(own[0],'move');
   const rest=[]; const site=h.c>=0?siteAt(h.c):null;
   const surveyors=own.filter(u=>u.type==='surveyor'), workers=own.filter(u=>u.type==='worker'), others=own.filter(u=>u.type!=='surveyor'&&u.type!=='worker');
   if(site){
@@ -3443,6 +3475,7 @@ function modeClick(sx,sy){
   const own=ownUnits(); const h=pickAt(sx,sy); if(!h.p) return;
   const site=h.c>=0?siteAt(h.c):null;
   if(own.length && !(mode.type==='rsurvey'||mode.type==='rscan')) issue({t:'man',u:ids(own)});
+  if(own.length) voiceLine(own.find(u=>u.def.dmg)||own[0],mode.type==='attack'?'attack':'move');
   if(mode.type==='attack'){ const enemy=h.unit&&h.unit.team!==ME?h.unit:(h.bld&&h.bld.team!==ME?h.bld:null);
     if(enemy) issue({t:'atk',u:ids(own),e:enemy.id}); else { issue(mvCmd(own,h.p,true)); marker(h.p,0xff5b3a); } }
   else if(mode.type==='survey'||mode.type==='scan'){
@@ -3743,6 +3776,90 @@ $('#cmdCard').addEventListener('pointerleave',hideTip);
 function showTip(html,x,y,above){ const t=$('#tip'); t.innerHTML=html; t.style.display='block'; const w=t.offsetWidth, h=t.offsetHeight; t.style.left=clamp(x-w,6,innerWidth-w-6)+'px'; t.style.top=clamp(above?y-h:y+18,6,innerHeight-h-6)+'px'; }
 function hideTip(){ $('#tip').style.display='none'; }
 
+const esc=(t)=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* =====================================================================
+   Characters: every unit has a name, a live portrait and a voice.
+   Names come from the unit's id and the match seed, so every player in a match sees the same names.
+   Voice lines use the browser's speech synthesiser, pitched and paced per race, with subtitles.
+   ===================================================================== */
+const CHAR={
+  terran:{ ranks:{ marine:'Pvt.', breacher:'Cpl.', ranger:'Spc.', grenadier:'Cpl.', rover:'Drv.', skiff:'Lt.', mortar:'Gnr.', walker:'Capt.', surveyor:'Surveyor' },
+    first:['Reyes','Okafor','Lindqvist','Tanaka','Moreau','Kowalski','Haddad','Nguyen','Brennan','Adeyemi','Ivanova','Castillo','Park','Mbeki','Duval','Sato','Abernathy','Ostrowski','Vance','Achterberg','Quinn','Delgado','Holt','Rasmussen'],
+    worker:(h)=>`Drone ${['D','K','M','R','T'][h%5]}-${10+h%90}`, mega:['Colonel "Bulwark" Hayes','Big Mother','The Iron Senator','Old Thunder','Major Tomsk','Lady Halcyon','The Warden','Unit Zero'],
+    pitch:1.0, rate:1.03,
+    lines:{ army:{ select:['Standing by.','What\'s the job, Commander?','Talk to me.','Ready when you are.','Eyes open.','Loaded and listening.'], move:['Moving out.','On my way.','Copy that.','Heading there now.','Roger, relocating.'], attack:['Weapons hot!','Engaging!','Light them up!','Target acquired.','Contact! Opening fire.'], ready:['Reporting for duty.','Boots on the rock.','Suited up and ready.'], hurt:['Taking fire!','We\'re hit! Need support!','They\'re on us!'] },
+      worker:{ select:['Drill\'s warm.','Need something dug?','This rock won\'t dig itself.','Hauler standing by.'], move:['On it.','Hauling.','Right away.','Rolling.'], ready:['Drone online.','Another pair of arms, reporting.'] },
+      survey:{ select:['Scanner online.','Reading the rock.','Signals look interesting.'], move:['Plotting a course.','Survey kit packed.'], ready:['Surveyor ready. Let\'s see what\'s down there.'] },
+      mega:{ select:['The ground trembles.','Big guns, reporting.','Point me at them.'], move:['Clear the way.','Advancing.'], attack:['Obliterate them.','Full power!'], ready:['The forge has delivered. I am ready.'] } } },
+  fowl:{ ranks:{ marine:'Pvt.', breacher:'Sgt.', ranger:'Spc.', grenadier:'Cpl.', rover:'Rider', skiff:'Flt. Lt.', mortar:'Gunner', walker:'Sir', surveyor:'Hoot' },
+    first:['Cluckworth','Henrietta','Pecksalot','Featherby','Drumstick','Nugget','Eggbert','Clucky McCluckface','Beaky','Wingston','Pip','Roostervelt','Plume','Goosey','Chirpson','Gizzard','Maran','Buff Orpington','Sussex','Ruffles','Scratch','Omelette','Waddle','Talonsworth'],
+    worker:(h)=>`${['Hen','Pullet','Biddy','Clucker'][h%4]} #${1+h%99}`, mega:['Grand Dame Featherstone','The Colossal Cluck','Lord Wattle III','Mother Goose','The Phoenix Queen','General Drumstick','His Royal Beakness','Old Speckled'],
+    pitch:1.65, rate:1.22,
+    lines:{ army:{ select:['Bawk? Ready!','Feathers fluffed, Commander!','Cluck cluck, what\'s up?','Egg-cellent timing!','I\'m all ears. Well, ear holes.','Bok bok!'], move:['Flapping over!','Beak first!','Cluck, on the way!','Wings out!','Waddling with purpose!'], attack:['Peck them to pieces!','Fowl play!','Ruffle their feathers!','BAWK! Charge!','Omelette time!'], ready:['Freshly hatched and ready!','Out of the shell, into the fight!'], hurt:['They\'re plucking us!','Feathers everywhere! Help!','Cluck! Under attack!'] },
+      worker:{ select:['Scratching for ore!','Peck, peck, dig.','Got seeds? No? Ore then.'], move:['Pecking away!','Scratch that, on it!','Cluck, hauling!'], ready:['Hatched and ready to scratch!'] },
+      survey:{ select:['Whooo needs a survey?','I see everything down there.','Hoo hoo. Listening.'], move:['Gliding over.','Silent wings, moving.'], ready:['The night-eyes are open.'] },
+      mega:{ select:['The flock follows me.','Behold the apex of poultry.','BAWK. Speak.'], move:['Make way for greatness!','Strutting forward.'], attack:['Feel the fury of the flock!','CLUCK DESTRUCTION!'], ready:['The golden egg has hatched!'] } } },
+  ceph:{ ranks:{ marine:'Squidling', breacher:'Bruiser', ranger:'Marksquid', grenadier:'Bomber', rover:'Dasher', skiff:'Jet-pilot', mortar:'Shellgunner', walker:'Lancer', surveyor:'Seer' },
+    first:['Inkwell','Squidney','Octavia','Tentaclés','Calamara','Sepia','Barnaby','Nautica','Glubson','Mollie','Siphon','Kraken Jr.','Coral','Bubbles','Ammo-nite','Quill','Marlo','Suckerton','Loligo','Pearl','Chromia','Abyssa','Tide','Murk'],
+    worker:(h)=>`Octoworker ${String.fromCharCode(65+h%26)}${h%10}`, mega:['The Leviathan Queen','Grandmother Ink','Abyssal Lord Voon','The Colossal Hug','Ten-Arms Tarrow','She Who Squeezes','The Deep One','Captain Kraaken'],
+    pitch:0.72, rate:0.9,
+    lines:{ army:{ select:['Blub. Listening.','All eight arms at your service.','Ink ready, Commander.','Glub. What depth?','Suckers ready.'], move:['Jetting over.','Flowing that way.','Swim, swim.','Tentacles moving.'], attack:['Ink them!','Wrap them up!','Squeeze!','From the deep, we strike!'], ready:['Hatched from the brood. Blub.','Fresh from the reef.'], hurt:['We\'re leaking! Help!','Ink! Ink! We\'re under attack!','They\'re tearing at our arms!'] },
+      worker:{ select:['Eight arms, one pick.','Prying it loose.','Blub. Dig where?'], move:['Crawling over.','Carrying, carrying.','Glub, on it.'], ready:['Another pair of arms. Well, four pairs.'] },
+      survey:{ select:['The rock changes colour for me.','Reading the currents below.','My skin tingles. Metal.'], move:['Drifting there.','Colours shifting, moving.'], ready:['The cuttlefish sees.'] },
+      mega:{ select:['The abyss answers.','I am the deep.','Speak, small one.'], move:['The tide rises.','I move like the ocean.'], attack:['Drown them in ink!','Crush!'], ready:['From the trench, I rise.'] } } },
+  void:{ ranks:{ marine:'Stalker', breacher:'Reaver', ranger:'Deadeye', grenadier:'Slinger', rover:'Houndmaster', skiff:'Wing', mortar:'Spitter', walker:'Gazer', surveyor:'Seer' },
+    first:['Skrath','Vex\'ka','Zhissa','Kaalen','Thrask','Ssylvor','Nyxa','Grazz','Ixtal','Vorrek','Shael','Krin','Zarth','Ulkiss','Rhessa','Tsuul','Harrok','Siv','Drazhi','Maw','Ykkra','Solth','Vesh','Karnis'],
+    worker:(h)=>`Thrall ${['Sk','Zz','Kr','Th'][h%4]}-${1+h%64}`, mega:['Apex Vharr the Endless','The Hunger','Broodmother Szzara','Kral Who Devours','The Eclipse','Ssovereign Ix','Old Fang','The Hollow King'],
+    pitch:0.3, rate:0.82,
+    lines:{ army:{ select:['Ssspeak.','The hunt waits.','We are listening, Alpha.','Sssomething to kill?','The void hums.'], move:['We ssslither.','Through the dark.','Unseen, we go.','Moving. Hunting.'], attack:['Feed!','Tear them apart!','Blood for the brood!','Ssstrike!'], ready:['Born from the rift.','Hungry. Ready.'], hurt:['The prey bites back!','We bleed! Sssupport!','Ambush! Hunters, to me!'] },
+      worker:{ select:['Thrall obeys.','Dig. Always dig.','Yesss, master?'], move:['Digging, master.','The thrall goes.'], ready:['A thrall crawls from the rift.'] },
+      survey:{ select:['The void whispers where metal sleeps.','I taste the rock.'], move:['Following the whispers.'], ready:['The seer awakens.'] },
+      mega:{ select:['Kneel before the apex.','I devour worlds.','Sssmall thing. Speak.'], move:['The world shakes beneath me.'], attack:['Consume them all!','Nothing escapes!'], ready:['The altar has given birth to hunger.'] } } },
+};
+function unitClass(u){ return u.def.mega?'mega':u.type==='worker'?'worker':u.type==='surveyor'?'survey':'army'; }
+function unitHash(u,n){ return Math.floor(hash3(u.id,u.team*7+3,n)*1e6); }
+function nameOf(e){ if(!e||e.kind!=='unit') return e?e.def.name:''; if(e.pname) return e.pname;
+  const C=CHAR[raceOf(e.team)]||CHAR.terran, h=unitHash(e,17);
+  const nm=e.def.mega?C.mega[h%C.mega.length]:e.type==='worker'?C.worker(h):`${C.ranks[e.type]||'Pvt.'} ${C.first[h%C.first.length]}`;
+  return e.pname=nm; }
+/* voices */
+let enVoices=[]; function loadVoices(){ try{ const v=speechSynthesis.getVoices(); enVoices=v.filter(x=>/^en/i.test(x.lang)); if(!enVoices.length) enVoices=v; }catch(e){} }
+try{ if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
+let lastVoiceT=0, lastVoiceKey='', subtitleT=null;
+function voiceLine(u,kind,force){
+  if(!u||u.kind!=='unit'||u.team!==ME) return;
+  const now=performance.now(); if(!force && now-lastVoiceT<(kind==='select'?900:1400)) return;
+  const C=CHAR[raceOf(u.team)]||CHAR.terran, cls=unitClass(u), pool=(C.lines[cls]&&C.lines[cls][kind])||C.lines.army[kind]; if(!pool||!pool.length) return;
+  let text=pool[Math.floor(Math.random()*pool.length)]; if(pool.length>1&&lastVoiceKey===text) text=pool[(pool.indexOf(text)+1)%pool.length]; lastVoiceKey=text; lastVoiceT=now;
+  showSubtitle(nameOf(u),text); portrait.talk=Math.min(2.2,0.6+text.length*0.05);
+  if(!opts.voice) return;
+  try{ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance(text);
+    const h=unitHash(u,5), big=u.def.mega?0.75:1; ut.pitch=clamp(C.pitch*big*(0.92+(h%17)/100),0.1,2); ut.rate=clamp(C.rate*(0.95+(h%11)/100)*(u.def.mega?0.92:1),0.5,1.6); ut.volume=0.85;
+    if(enVoices.length) ut.voice=enVoices[h%enVoices.length]; speechSynthesis.speak(ut); }catch(e){}
+}
+function showSubtitle(who,text){ const el=$('#subtitle'); if(!el) return; el.innerHTML=''; const b=document.createElement('b'); b.textContent=who+': '; el.appendChild(b); el.appendChild(document.createTextNode(text)); el.classList.add('show'); clearTimeout(subtitleT); subtitleT=setTimeout(()=>el.classList.remove('show'),2600); }
+/* live portrait: the selected unit or building, rendered by its own small renderer */
+const portrait={ r:null, scene:null, cam:null, pivot:null, forE:null, canvas:null, t:0, talk:0, acc:0, h:1 };
+function initPortrait(){ if(portrait.r!==null) return portrait.r;
+  try{ const cv=document.createElement('canvas'); cv.className='pcan'; const r=new THREE.WebGLRenderer({ canvas:cv, alpha:true, antialias:true });
+    r.setPixelRatio(Math.min(devicePixelRatio,2)); r.setSize(120,120,false); r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.25;
+    const sc=new THREE.Scene(); sc.add(new THREE.HemisphereLight(0x9fb4ff,0x2a2119,1.1)); const key=new THREE.DirectionalLight(0xfff0dc,2.6); key.position.set(2.5,3,4); sc.add(key);
+    const rim=new THREE.DirectionalLight(0x5fa8ff,2.2); rim.position.set(-3,2,-4); sc.add(rim);
+    const cam=new THREE.PerspectiveCamera(30,1,0.05,60); const pivot=new THREE.Group(); sc.add(pivot);
+    Object.assign(portrait,{ r, scene:sc, cam, pivot, canvas:cv }); }catch(e){ portrait.r=false; }
+  return portrait.r; }
+function portraitFor(e){ if(!initPortrait()) return; if(portrait.forE===e) return; portrait.forE=e;
+  portrait.pivot.clear(); if(!e) return;
+  const { g, P:pp }=e.kind==='unit'?buildUnitModel(e.type,e.team):buildBuildingModel(e.type,e.team); if(pp&&pp.halo) pp.halo.parent.remove(pp.halo); if(pp&&pp.dome) pp.dome.parent.remove(pp.dome);
+  g.traverse(o=>{ if(o.isMesh) o.castShadow=false; }); portrait.pivot.add(g);
+  const box=new THREE.Box3().setFromObject(g), size=box.getSize(V3()), ctr=box.getCenter(V3()); g.position.sub(new THREE.Vector3(ctr.x,box.min.y,ctr.z));
+  const h=Math.max(size.y,size.x*0.8,size.z*0.8,0.3); portrait.h=h; const d=h*(e.kind==='unit'?1.85:2.3);
+  portrait.cam.position.set(d*0.42,h*0.72,d); portrait.cam.lookAt(0,h*(e.kind==='unit'?0.5:0.42),0); portrait.t=0; }
+function updatePortrait(dt){ const P_=portrait; if(!P_.r||!P_.forE||!P_.canvas.isConnected) return; P_.acc+=dt; if(P_.acc<1/30) return; const step=P_.acc; P_.acc=0;
+  P_.t+=step; P_.talk=Math.max(0,P_.talk-step);
+  P_.pivot.rotation.y=Math.sin(P_.t*0.5)*0.55-0.25; const talking=P_.talk>0?Math.abs(Math.sin(P_.t*14))*0.04:0; P_.pivot.position.y=Math.sin(P_.t*1.6)*0.02*P_.h+talking*P_.h; P_.pivot.scale.setScalar(1+talking*0.5);
+  fogU.uNoFog.value=1; try{ P_.r.render(P_.scene,P_.cam); }catch(e){} fogU.uNoFog.value=0; }
+
 let panelSig='';
 const hpColor=(f)=>f>0.6?'var(--good)':f>0.3?'var(--gold)':'var(--bad)';
 function renderPanel(){
@@ -3768,13 +3885,14 @@ function renderPanel(){
       else extra=`<div class="sub">${e.def.desc}${e.def.supply?` Supports ${e.def.supply} crew.`:''}</div>`;
       if(e.def.dmg) stats=`<div class="stat"><b>${Math.round(e.def.dmg)}</b><span>Damage</span></div><div class="stat"><b>${Math.round(e.def.range*10)/10}</b><span>Range</span></div>`;
     }
-    html=`<div class="portrait"><div class="pic">${svg(e.def.icon,col)}</div><div class="hpbar"><i style="width:${f*100}%;background:${hpColor(f)}"></i></div><div class="hptxt">${Math.ceil(e.hp)} / ${e.maxHp}</div></div>
-      <div class="info"><h2>${e.def.name}${own?'':' <span style="color:var(--foe);font-size:16px">hostile</span>'}</h2>${stats?`<div class="stats">${stats}</div>`:''}${extra}</div>`;
+    html=`<div class="portrait"><div class="pic" data-port="1">${portrait.r===false?svg(e.def.icon,col):''}</div><div class="hpbar"><i style="width:${f*100}%;background:${hpColor(f)}"></i></div><div class="hptxt">${Math.ceil(e.hp)} / ${e.maxHp}</div></div>
+      <div class="info"><h2>${e.kind==='unit'?esc(nameOf(e)):e.def.name}${own?'':' <span style="color:var(--foe);font-size:16px">hostile</span>'}</h2>${e.kind==='unit'?`<div class="rank">${e.def.name}${e.kills?` · ${e.kills} kill${e.kills>1?'s':''}`:''}</div>`:''}${stats?`<div class="stats">${stats}</div>`:''}${extra}</div>`;
   } else if(opts.vlist){ const order=list.map((e,k)=>k).sort((a,b)=>list[a].def.name.localeCompare(list[b].def.name)||list[a].id-list[b].id);
     html=`<div class="vlist"><div class="vhead">${list.length} selected</div>`+order.map(k=>{ const e=list[k], f=e.hp/e.maxHp;
-      return `<div class="vrow" data-u="${k}">${svg(e.def.icon,'var(--you)')}<span class="vn">${e.def.name}</span><span class="vb"><i style="width:${f*100}%;background:${hpColor(f)}"></i></span><span class="vh">${Math.ceil(e.hp)}</span></div>`; }).join('')+`</div>`; }
+      return `<div class="vrow" data-u="${k}" title="${esc(nameOf(e))}, ${e.def.name}">${svg(e.def.icon,'var(--you)')}<span class="vn">${esc(nameOf(e))} <small>${e.def.name}</small></span><span class="vb"><i style="width:${f*100}%;background:${hpColor(f)}"></i></span><span class="vh">${Math.ceil(e.hp)}</span></div>`; }).join('')+`</div>`; }
   else html=`<div class="grid">`+list.slice(0,40).map((e,k)=>{ const f=e.hp/e.maxHp; return `<div class="gcell" data-u="${k}">${svg(e.def.icon,'var(--you)')}<i style="width:calc(${f*100}% - 4px);background:${hpColor(f)}"></i></div>`; }).join('')+`</div>`;
   if(html!==panelSig){ panelSig=html; $('#selPanel').innerHTML=html; }
+  { const pic=document.querySelector('#selPanel .pic[data-port]'); if(pic && list.length===1 && initPortrait()){ portraitFor(list[0]); if(portrait.canvas.parentNode!==pic) pic.appendChild(portrait.canvas); } }
 }
 $('#selPanel').addEventListener('pointerdown',e=>{
   const q=e.target.closest('[data-q]'); if(q&&sel[0]&&sel[0].kind==='bld'&&sel[0].team===ME){ issue({t:'untrain',b:sel[0].id,k:+q.dataset.q}); return; }
@@ -3823,10 +3941,11 @@ for(const b of document.querySelectorAll('#quick .qbtn')) b.addEventListener('cl
 function renderQuick(){ const el=$('#quick'); if(!el) return; el.style.display=started&&!over?'flex':'none'; if(!started) return;
   for(const k in quickCat){ const n=units.filter(u=>!u.dead&&u.team===ME&&quickCat[k](u)).length; const c=$('#q-'+k); if(c&&c.textContent!==String(n)) c.textContent=n; } }
 /* options menu */
-function syncOpts(){ $('#opt-vlist').checked=opts.vlist; $('#opt-edge').checked=opts.edge; }
+function syncOpts(){ $('#opt-vlist').checked=opts.vlist; $('#opt-edge').checked=opts.edge; $('#opt-voice').checked=opts.voice; }
 $('#optBtn').addEventListener('click',e=>{ e.stopPropagation(); const m=$('#optMenu'); m.classList.toggle('show'); syncOpts(); });
 $('#optMenu').addEventListener('click',e=>e.stopPropagation());
 document.addEventListener('pointerdown',e=>{ if(!e.target.closest('#optMenu')&&!e.target.closest('#optBtn')) $('#optMenu').classList.remove('show'); });
+$('#opt-voice').addEventListener('change',e=>{ opts.voice=e.target.checked; saveOpts(); try{ if(!opts.voice) speechSynthesis.cancel(); }catch(err){} });
 $('#opt-vlist').addEventListener('change',e=>{ opts.vlist=e.target.checked; saveOpts(); panelSig=''; renderPanel(); });
 $('#opt-edge').addEventListener('change',e=>{ opts.edge=e.target.checked; saveOpts(); edgeLatch.t=0; toast(opts.edge?'Edge scrolling on':'Edge scrolling off. Pan with the arrow keys, middle-drag or the minimap.','market'); });
 syncOpts();
@@ -4436,7 +4555,7 @@ function frame(now){
   updateSites(dt,now); updateXray(now); updateCutaway(dt,now); updateAssay(dt); updateRange();
   simT.sub=(simT.sub||0)-dt; if(simT.sub<=0){ simT.sub=0.3; updateSubTex(); }
   { const sv=sel.some(e=>!e.dead&&e.type==='surveyor'&&e.team===ME); const tgt=Math.max([0,0.45,0.85][subMode], sv?0.8:0); fogU.uSubStr.value+=(tgt-fogU.uSubStr.value)*Math.min(1,dt*6); fogU.uTime.value=now*0.001; }
-  musicTick(dt); updateFogTex(dt); updateFloaters(dt); updateGhost(); updateHover(dt); drawMinimap(dt);
+  musicTick(dt); updatePortrait(dt); updateFogTex(dt); updateFloaters(dt); updateGhost(); updateHover(dt); drawMinimap(dt);
   simT.ui-=dt; if(simT.ui<=0||uiDirty){ simT.ui=0.2; renderTop(); renderPanel(); renderCard(uiDirty); renderMarket(); uiDirty=false; }
   if(gradePass) gradePass.uniforms.uTime.value=now*0.001;
   if(composer&&!gfxLow) composer.render(); else renderer.render(scene,camera);
