@@ -117,6 +117,25 @@ body.locked, body.locked *{ cursor:none !important; }
 .gcell{ height:44px; background:#141619; border:1px solid #3a3f45; display:grid; place-items:center; position:relative; cursor:pointer; }
 .gcell svg{ width:28px; height:28px; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 .gcell i{ position:absolute; left:2px; right:2px; bottom:2px; height:3px; background:var(--good); }
+.vlist{ flex:1; display:flex; flex-direction:column; gap:2px; overflow-y:auto; max-height:100%; padding-right:4px; }
+.vhead{ font-family:'Barlow Condensed'; font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--lamp); margin-bottom:2px; }
+.vrow{ display:grid; grid-template-columns:22px minmax(0,1fr) 90px 34px; gap:8px; align-items:center; padding:2px 6px; background:#141619; border:1px solid #2a2e33; cursor:pointer; font-size:13px; }
+.vrow:hover{ border-color:var(--lamp); }
+.vrow svg{ width:18px; height:18px; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.vrow .vn{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vrow .vb{ height:5px; background:#2a2e33; position:relative; } .vrow .vb i{ position:absolute; left:0; top:0; bottom:0; }
+.vrow .vh{ color:var(--dim); text-align:right; font-variant-numeric:tabular-nums; }
+#quick{ position:fixed; left:12px; bottom:calc(var(--console-h) + 14px); z-index:6; display:none; flex-direction:column; gap:4px; }
+#quick .qbtn{ display:flex; align-items:center; gap:6px; background:rgba(15,17,20,.88); border:1px solid var(--edge-hi); color:var(--text); font-family:'Barlow Condensed'; font-size:14px; padding:3px 8px 3px 6px; cursor:pointer; min-width:92px; }
+#quick .qbtn:hover{ border-color:var(--lamp); }
+#quick .qbtn svg{ width:16px; height:16px; stroke:var(--you); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+#quick .qbtn b{ margin-left:auto; font-weight:700; color:var(--lamp); }
+#quick .qbtn kbd{ font-size:11px; color:var(--dim); font-family:inherit; }
+#optBtn{ white-space:nowrap; pointer-events:auto; background:#15171a; border:1px solid var(--edge); margin-left:6px; padding:0 10px; cursor:pointer; color:var(--text); font-size:16px; }
+#optMenu{ position:fixed; top:52px; right:12px; z-index:30; display:none; flex-direction:column; gap:8px; background:rgba(12,13,16,.96); border:1px solid var(--edge-hi); padding:12px 14px; font-size:14px; min-width:260px; }
+#optMenu.show{ display:flex; } #optMenu h4{ margin:0 0 2px; font-family:'Barlow Condensed'; font-size:14px; letter-spacing:.12em; text-transform:uppercase; color:var(--lamp); }
+#optMenu label{ display:flex; gap:9px; align-items:flex-start; cursor:pointer; line-height:1.35; } #optMenu label small{ display:block; color:var(--dim); font-size:12.5px; }
+#optMenu input{ accent-color:var(--lamp); margin-top:3px; }
 .empty-note{ color:var(--dim); align-self:center; font-size:14px; max-width:48ch; line-height:1.45; }
 .empty-note b{ color:var(--text); font-weight:600; }
 
@@ -269,6 +288,7 @@ body.locked, body.locked *{ cursor:none !important; }
     <button id="geoBtn" aria-label="Geology overlay" title="Subsurface colour map from your surveyors. Tab cycles it.">Geo: faint</button>
     <button id="musBtn" aria-label="Music" title="Toggle the soundtrack. The M key also does it when your selection has no Move button.">♪ Music</button>
     <button id="gfxBtn" aria-label="Graphics quality" title="Switch to low graphics if the game runs slowly">Gfx: high</button>
+    <button id="optBtn" aria-label="Options" title="Options">⚙</button>
     <button id="lockBtn" aria-label="Lock cursor" title="Lock the cursor inside the game so edge scrolling works like StarCraft. Esc releases it.">Lock cursor</button>
     <button id="helpBtn" aria-label="Controls and help">?</button>
   </div>
@@ -295,6 +315,15 @@ body.locked, body.locked *{ cursor:none !important; }
 </div>
 
 <div id="tip"></div>
+<div id="quick" aria-label="Quick select">
+  <button class="qbtn" data-k="workers" title="Select all workers (F1). Press again to jump to them."><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6zM11 7L4 14l3 3 7-7"/><path d="M4 20l3-3"/></svg>Workers<b id="q-workers">0</b></button>
+  <button class="qbtn" data-k="army" title="Select your whole army (F2). Press again to jump to it."><svg viewBox="0 0 24 24"><path d="M5 19L19 5M14 5h5v5M5 14l5 5"/></svg>Army<b id="q-army">0</b></button>
+  <button class="qbtn" data-k="survey" title="Select all surveyors (F3). Press again to jump to them."><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Survey<b id="q-survey">0</b></button>
+</div>
+<div id="optMenu" role="dialog" aria-label="Options"><h4>Options</h4>
+  <label><input type="checkbox" id="opt-vlist"><span>List selected units vertically<small>Shows a row per unit with its name and health instead of the icon grid.</small></span></label>
+  <label><input type="checkbox" id="opt-edge"><span>Edge scrolling<small>Pan when the pointer touches the screen edge. Arrow keys, middle-drag and the minimap always work.</small></span></label>
+</div>
 <div id="pauseNote">Paused</div>
 <div id="mpbar"><span id="mp-vs">Versus</span><button id="mpPause" title="P">Pause</button><button id="mpGG">Surrender</button></div>
 <div id="mpwait"><span id="mpwait-t">Waiting for your opponent…</span></div>
@@ -372,6 +401,7 @@ body.locked, body.locked *{ cursor:none !important; }
       <kbd>Shift + click</kbd><span>Add to selection</span>
       <kbd>Double-click</kbd><span>Select all of that type on screen</span>
       <kbd>Backspace</kbd><span>Jump to your command hub</span>
+      <kbd>F1 / F2 / F3</kbd><span>Select all workers / army / surveyors (buttons on the left). Press again to jump to them. ⚙ top right: vertical selection list, edge scrolling on or off</span>
       <kbd>P, + and -, backquote</kbd><span>Pause, game speed 1x to 10x, playtest tools (freeze enemy, grant resources, reveal map). In a versus match P pauses for both players, and speed and playtest tools are off</span>
     </div>
     <button class="go" id="closeHelp">Back to the rock</button>
@@ -3289,6 +3319,9 @@ function aiUpdate(dt,team=1){
 const cam={ t:PB.clone(), h:tangentToward(PB,V3().set(0,1,0).add(PB)), dist:26, distT:26 };
 const camTP=V3();
 const keys=new Set(); let mouseX=innerWidth/2, mouseY=innerHeight/2, mouseIn=false;
+/* player options, remembered in this browser */
+const opts={ vlist:false, edge:true }; try{ Object.assign(opts,JSON.parse(localStorage.getItem('andro-opts')||'{}')); }catch(e){}
+function saveOpts(){ try{ localStorage.setItem('andro-opts',JSON.stringify(opts)); }catch(e){} }
 const PAN_EDGE=34, PAN_EDGE_B=26, PAN_EDGE_WIN=10; // edge zones in px: sides and top, a strip above the console, and the very bottom of the window
 let consoleTop=innerHeight-190;
 /* edge scrolling that keeps going when the pointer slips past the edge of the frame, like a confined cursor in StarCraft */
@@ -3308,7 +3341,8 @@ function updateCamera(dt){
   let f=0, r=0;
   if(keys.has('ArrowUp')) f+=1; if(keys.has('ArrowDown')) f-=1; if(keys.has('ArrowRight')) r+=1; if(keys.has('ArrowLeft')) r-=1;
   if(started && !dragPan && !mmDrag && cardOpen<0){
-    if(mouseIn||cursorLocked){
+    if(!opts.edge){ /* edge scrolling switched off in the options */ }
+    else if(mouseIn||cursorLocked){
       const ez=(d,m)=>d<m?0.45+0.55*(1-Math.max(d,0)/m):0;
       r-=ez(mouseX,PAN_EDGE); r+=ez(innerWidth-1-mouseX,PAN_EDGE); f+=ez(mouseY,PAN_EDGE);
       if(mouseY<consoleTop) f-=ez(consoleTop-1-mouseY,PAN_EDGE_B);   // strip just above the console
@@ -3580,6 +3614,7 @@ addEventListener('keydown',e=>{
   if(cardOpen>=0){ if(/^[1-3]$/.test(k)){ e.preventDefault(); chooseCard(+k-1); } return; }
   if(k==='`'){ if(!(MP&&MP.live)) $('#devbar').classList.toggle('open'); return; }
   if(k==='Tab'){ e.preventDefault(); cycleSub(); return; }
+  if(k==='F1'||k==='F2'||k==='F3'){ e.preventDefault(); quickSelect(k==='F1'?'workers':k==='F2'?'army':'survey'); return; }
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!cardSlots().some(s=>s&&s.hot==='M')){ setMusic(!musicOn); return; }
   if(k==='p'||k==='P'){ if(MP&&MP.live) issue({t:'halt',v:MP.halted?0:1}); else setPaused(!paused); return; }
   if(MP&&MP.live&&'=+-_'.includes(k)) return;
@@ -3735,7 +3770,10 @@ function renderPanel(){
     }
     html=`<div class="portrait"><div class="pic">${svg(e.def.icon,col)}</div><div class="hpbar"><i style="width:${f*100}%;background:${hpColor(f)}"></i></div><div class="hptxt">${Math.ceil(e.hp)} / ${e.maxHp}</div></div>
       <div class="info"><h2>${e.def.name}${own?'':' <span style="color:var(--foe);font-size:16px">hostile</span>'}</h2>${stats?`<div class="stats">${stats}</div>`:''}${extra}</div>`;
-  } else html=`<div class="grid">`+list.slice(0,40).map((e,k)=>{ const f=e.hp/e.maxHp; return `<div class="gcell" data-u="${k}">${svg(e.def.icon,'var(--you)')}<i style="width:calc(${f*100}% - 4px);background:${hpColor(f)}"></i></div>`; }).join('')+`</div>`;
+  } else if(opts.vlist){ const order=list.map((e,k)=>k).sort((a,b)=>list[a].def.name.localeCompare(list[b].def.name)||list[a].id-list[b].id);
+    html=`<div class="vlist"><div class="vhead">${list.length} selected</div>`+order.map(k=>{ const e=list[k], f=e.hp/e.maxHp;
+      return `<div class="vrow" data-u="${k}">${svg(e.def.icon,'var(--you)')}<span class="vn">${e.def.name}</span><span class="vb"><i style="width:${f*100}%;background:${hpColor(f)}"></i></span><span class="vh">${Math.ceil(e.hp)}</span></div>`; }).join('')+`</div>`; }
+  else html=`<div class="grid">`+list.slice(0,40).map((e,k)=>{ const f=e.hp/e.maxHp; return `<div class="gcell" data-u="${k}">${svg(e.def.icon,'var(--you)')}<i style="width:calc(${f*100}% - 4px);background:${hpColor(f)}"></i></div>`; }).join('')+`</div>`;
   if(html!==panelSig){ panelSig=html; $('#selPanel').innerHTML=html; }
 }
 $('#selPanel').addEventListener('pointerdown',e=>{
@@ -3775,7 +3813,25 @@ function renderMarket(){
   if(rows!==marketSig){ marketSig=rows; $('#mk-rows').innerHTML=rows; }
 }
 $('#market').addEventListener('pointerdown',e=>{ const b=e.target.closest('.mbtn'); if(!b||b.disabled) return; issue({t:'sell',m:+b.dataset.m,all:b.dataset.n==='all'?1:0}); });
+/* quick-select buttons: all workers, all army, all surveyors (F1, F2, F3). A second press centres the camera on them. */
+const quickCat={ workers:(u)=>u.type==='worker', army:(u)=>u.def.dmg&&u.type!=='worker'&&u.type!=='surveyor', survey:(u)=>u.type==='surveyor' };
+let quickLast={k:null,t:0};
+function quickSelect(k){ const l=units.filter(u=>!u.dead&&u.team===ME&&!(u.hatch>0)&&quickCat[k](u)); if(!l.length){ sfx('deny'); return; }
+  const now=performance.now(), again=quickLast.k===k&&now-quickLast.t<600; quickLast={k,t:now};
+  setSel(l); if(again){ const p=V3(); l.forEach(u=>p.add(u.p)); centerOn(p.normalize()); mmDirty=true; } }
+for(const b of document.querySelectorAll('#quick .qbtn')) b.addEventListener('click',()=>quickSelect(b.dataset.k));
+function renderQuick(){ const el=$('#quick'); if(!el) return; el.style.display=started&&!over?'flex':'none'; if(!started) return;
+  for(const k in quickCat){ const n=units.filter(u=>!u.dead&&u.team===ME&&quickCat[k](u)).length; const c=$('#q-'+k); if(c&&c.textContent!==String(n)) c.textContent=n; } }
+/* options menu */
+function syncOpts(){ $('#opt-vlist').checked=opts.vlist; $('#opt-edge').checked=opts.edge; }
+$('#optBtn').addEventListener('click',e=>{ e.stopPropagation(); const m=$('#optMenu'); m.classList.toggle('show'); syncOpts(); });
+$('#optMenu').addEventListener('click',e=>e.stopPropagation());
+document.addEventListener('pointerdown',e=>{ if(!e.target.closest('#optMenu')&&!e.target.closest('#optBtn')) $('#optMenu').classList.remove('show'); });
+$('#opt-vlist').addEventListener('change',e=>{ opts.vlist=e.target.checked; saveOpts(); panelSig=''; renderPanel(); });
+$('#opt-edge').addEventListener('change',e=>{ opts.edge=e.target.checked; saveOpts(); edgeLatch.t=0; toast(opts.edge?'Edge scrolling on':'Edge scrolling off. Pan with the arrow keys, middle-drag or the minimap.','market'); });
+syncOpts();
 function renderTop(){
+  renderQuick();
   const r=P[ME]; for(const k of CKEYS) $('#r-'+k).textContent=Math.floor(r[k]);
   for(const k of ['ir','xen']) $('#c-'+k).classList.toggle('hide',r[k]<=0 && !sites.some(s=>s.cored[ME]));
   { const el=$('#c-sd'), t=pathSummary(ME); if(el.dataset.path!==t){ el.dataset.path=t; el.title='Survey data from surveys (1), deep scans (2) and core drills (3). Each tier makes digging faster.\n\nYour path: '+t; } }
