@@ -142,6 +142,23 @@ body.locked, body.locked *{ cursor:none !important; }
 #optMenu.show{ display:flex; } #optMenu h4{ margin:0 0 2px; font-family:'Barlow Condensed'; font-size:14px; letter-spacing:.12em; text-transform:uppercase; color:var(--lamp); }
 #optMenu label{ display:flex; gap:9px; align-items:flex-start; cursor:pointer; line-height:1.35; } #optMenu label small{ display:block; color:var(--dim); font-size:12.5px; }
 #optMenu input{ accent-color:var(--lamp); margin-top:3px; }
+#tutor{ position:fixed; left:12px; top:56px; z-index:12; width:min(360px,calc(100vw - 24px)); display:none; flex-direction:column; gap:6px; background:rgba(10,11,14,.94); border:1px solid var(--lamp); border-left:4px solid var(--lamp); padding:12px 14px 12px; box-shadow:0 8px 30px rgba(0,0,0,.5); transition:border-color .3s; }
+#tutor.show{ display:flex; } #tutor.ok{ border-color:var(--good); }
+#tutor .tut-top{ display:flex; justify-content:space-between; align-items:center; font-family:'Barlow Condensed'; font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--lamp); }
+#tut-dots{ display:flex; gap:4px; } #tut-dots i{ width:8px; height:8px; border:1px solid var(--edge-hi); display:block; } #tut-dots i.d{ background:var(--lamp-dim,#8a6a2a); border-color:transparent; } #tut-dots i.c{ background:var(--lamp); border-color:var(--lamp); }
+#tutor h3{ margin:0; font-family:'Barlow Condensed'; font-size:24px; font-weight:700; line-height:1.05; }
+#tutor p{ margin:0; font-size:14.5px; line-height:1.5; color:var(--text); }
+#tutor .tut-btns{ display:flex; gap:8px; margin-top:4px; }
+#tutor button{ background:#15171a; color:var(--text); border:1px solid var(--edge-hi); font-family:'Barlow Condensed'; font-size:15px; padding:4px 12px; cursor:pointer; }
+#tutor button.primary{ background:var(--lamp); color:#1a1408; border-color:var(--lamp); font-weight:700; } #tutor button:hover{ border-color:var(--lamp); }
+.tut-hi{ outline:3px solid var(--lamp) !important; outline-offset:2px; animation:tutpulse 1s ease-in-out infinite; position:relative; z-index:3; }
+@keyframes tutpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,184,77,.7); } 50%{ box-shadow:0 0 0 7px rgba(255,184,77,0); } }
+#tutArrow{ position:fixed; z-index:11; display:none; transform:translate(-50%,-100%); pointer-events:none; }
+#tutArrow span{ display:block; background:var(--lamp); color:#1a1408; font-family:'Barlow Condensed'; font-weight:700; font-size:15px; padding:4px 10px; white-space:nowrap; animation:tutbob 1s ease-in-out infinite; }
+#tutArrow span::after{ content:''; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); border:8px solid transparent; border-bottom:0; border-top-color:var(--lamp); }
+#tutArrow.edge{ pointer-events:auto; cursor:pointer; transform:translate(-50%,-50%); } #tutArrow.edge span::after{ display:none; }
+@keyframes tutbob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+@media (prefers-reduced-motion: reduce){ .tut-hi,#tutArrow span{ animation:none; } }
 .empty-note{ color:var(--dim); align-self:center; font-size:14px; max-width:48ch; line-height:1.45; }
 .empty-note b{ color:var(--text); font-weight:600; }
 
@@ -322,6 +339,9 @@ body.locked, body.locked *{ cursor:none !important; }
 
 <div id="tip"></div>
 <div id="subtitle" aria-live="polite"></div>
+<div id="tutor" role="dialog" aria-label="Tutorial"><div class="tut-top"><span id="tut-step">Step 1</span><span id="tut-dots"></span></div>
+  <h3 id="tut-title">Welcome</h3><p id="tut-text"></p>
+  <div class="tut-btns"><button id="tut-next">Skip step</button><button id="tut-exit">Exit tutorial</button></div></div>
 <div id="quick" aria-label="Quick select">
   <button class="qbtn" data-k="workers" title="Select all workers (F1). Press again to jump to them."><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6zM11 7L4 14l3 3 7-7"/><path d="M4 20l3-3"/></svg>Workers<b id="q-workers">0</b></button>
   <button class="qbtn" data-k="army" title="Select your whole army (F2). Press again to jump to it."><svg viewBox="0 0 24 24"><path d="M5 19L19 5M14 5h5v5M5 14l5 5"/></svg>Army<b id="q-army">0</b></button>
@@ -371,7 +391,7 @@ body.locked, body.locked *{ cursor:none !important; }
         <button class="racebtn sm" data-grp="foe" data-r="ceph"><b>Cephalopods</b></button>
         <button class="racebtn sm" data-grp="foe" data-r="void"><b>Vessk</b></button></div>
     </div>
-    <button class="go" id="startBtn" disabled>Loading terrain…</button>
+    <button class="go" id="startBtn" disabled>Loading terrain…</button><button class="go ghost" id="tutBtn" title="A guided first game: the enemy waits while you learn">Play the tutorial</button>
     <div class="mpbox" id="mpbox">
       <span class="rp-l" style="display:block;width:auto">Play with friends: up to 4, co-op or versus</span>
       <div class="mp-row"><button class="go ghost" id="mpHost">Host a match</button><span style="color:var(--dim)">or</span>
@@ -408,7 +428,7 @@ body.locked, body.locked *{ cursor:none !important; }
       <kbd>V / D / C</kbd><span>Survey, deep-scan, core-drill a site (surveyor). U toggles auto survey. Tab cycles the geology colour map</span>
       <kbd>Shift + click</kbd><span>Add to selection</span>
       <kbd>Double-click</kbd><span>Select all of that type on screen</span>
-      <kbd>Backspace</kbd><span>Jump to your command hub</span>
+      <kbd>Backspace</kbd><span>Jump to your command hub. New here? Play the tutorial from the start screen.</span>
       <kbd>F1 / F2 / F3</kbd><span>Select all workers / army / surveyors (buttons on the left). Press again to jump to them. ⚙ top right: vertical selection list, edge scrolling on or off</span>
       <kbd>P, + and -, backquote</kbd><span>Pause, game speed 1x to 10x, playtest tools (freeze enemy, grant resources, reveal map). In a versus match P pauses for both players, and speed and playtest tools are off</span>
     </div>
@@ -4474,6 +4494,87 @@ $('#mpStart').addEventListener('click',mpHostStart);
 $('#mpPause').addEventListener('click',()=>{ if(MP&&MP.live) issue({t:'halt',v:MP.halted?0:1}); });
 $('#mpGG').addEventListener('click',()=>{ if(MP&&MP.live&&!over&&confirm('Surrender this match for your whole side?')) issue({t:'gg'}); });
 
+/* =====================================================================
+   Tutorial: an optional guided first game. A coach panel explains one step at a time, highlights the
+   button or the spot on the ground to use, and moves on by itself once you have done it.
+   The enemy stays frozen until the tutorial ends.
+   ===================================================================== */
+let tutPending=false;
+const tut={ on:false, i:0, stepT:0, arrow:null, beacon:null, doneT:0 };
+const myUnits=(f)=>units.filter(u=>!u.dead&&u.team===ME&&f(u));
+const myBld=(t,done)=>blds.find(b=>!b.dead&&b.team===ME&&b.type===t&&(!done||b.done));
+const homeSite=()=>ME?sites[sites[0].twin]:sites[0];
+const slotSel=(id)=>{ const k=curSlots.findIndex(s=>s&&s.id===id); return k>=0?`#cmdCard .cmd[data-k="${k}"]`:null; };
+const TD_=(t)=>TD[ME][t].name, BD_=(t)=>BD[ME][t].name;
+const TUT=[
+  { title:'Welcome, Commander', manual:'Let\'s go',
+    text:()=>`This is your base on a small asteroid. Look around: move the pointer to the screen edges or use the arrow keys to pan, and the mouse wheel to zoom. Everything valuable is buried, so first you need your ${TD_('worker').toLowerCase()}s digging.` },
+  { title:'Select your workers', hi:()=>'#quick .qbtn[data-k="workers"]',
+    text:()=>`Click the Workers button on the left (or press F1), or drag a box around your ${TD_('worker').toLowerCase()}s next to the ${BD_('cc').toLowerCase()}.`,
+    done:()=>sel.some(e=>e.kind==='unit'&&e.team===ME&&e.type==='worker') },
+  { title:'Dig the home site', world:()=>homeSite().dir, label:'Right-click here',
+    text:()=>`The amber ring nearby is your home site, already surveyed. With the workers selected, right-click inside it. They dig down layer by layer and carry what they find back to the ${BD_('cc').toLowerCase()}.`,
+    done:()=>myUnits(u=>u.type==='worker'&&u.order.type==='mine').length>=2 },
+  { title:'Watch the first load come in',
+    text:()=>'Ore pays for buildings and units. Gold only comes from selling cargo to the Space Command freighter when it docks (top right shows when). Wait for the first ore to arrive.',
+    done:()=>P[ME].mined[0]>=10 },
+  { title:'Train a surveyor', world:()=>{ const c=myBld('cc'); return c&&!sel.includes(c)&&c.p; }, label:'Select this', hi:()=>slotSel('t_surveyor'),
+    text:()=>`Every other deposit is hidden. Click your ${BD_('cc').toLowerCase()} to select it, then click Train ${TD_('surveyor').toLowerCase()} (or press W).`,
+    done:()=>myUnits(u=>u.type==='surveyor').length>0||blds.some(b=>b.team===ME&&b.queue&&b.queue.includes('surveyor')) },
+  { title:'Send it exploring', hi:()=>sel.some(e=>e.type==='surveyor')?slotSel('auto'):'#quick .qbtn[data-k="survey"]',
+    text:()=>`When the ${TD_('surveyor').toLowerCase()} appears, select it (the Survey button on the left, or F3) and switch on Auto survey (U). It roams, finds buried sites and stakes them for digging, and paints a colour map of the rock below. Tab changes how strongly that map shows.`,
+    done:()=>myUnits(u=>u.type==='surveyor'&&u.auto).length>0 },
+  { title:'Build a habitat', hi:()=>sel.some(e=>e.type==='worker')?(slotSel('b_hab')||slotSel('build')):'#quick .qbtn[data-k="workers"]',
+    text:()=>`Your crew limit is shown top right. Select a worker, press B (Build), choose ${BD_('hab')}, then left-click open ground near the base. Green means the spot is fine.`,
+    done:()=>!!myBld('hab') },
+  { title:'Build a barracks', hi:()=>sel.some(e=>e.type==='worker')?(slotSel('b_barracks')||slotSel('build')):'#quick .qbtn[data-k="workers"]',
+    text:()=>`Now the same for a ${BD_('barracks')}: select a worker, B, then ${BD_('barracks')}. That's where your soldiers come from.`,
+    done:()=>!!myBld('barracks') },
+  { title:'Train two soldiers', world:()=>{ const b=myBld('barracks',true); return b&&!sel.includes(b)&&b.p; }, label:'Select this', hi:()=>slotSel('t_marine'),
+    text:()=>`When the ${BD_('barracks').toLowerCase()} is finished, select it and train two ${TD_('marine').toLowerCase()}s. Right-click the ground while it's selected to set a rally point.`,
+    done:()=>myUnits(u=>u.type==='marine').length>=2 },
+  { title:'Move and attack-move', hi:()=>sel.some(e=>e.kind==='unit'&&e.def.dmg&&e.type!=='worker')?slotSel('attack'):'#quick .qbtn[data-k="army"]',
+    text:()=>'Select your army (the Army button or F2). Right-click moves. Press A and then click the ground to attack-move: they walk there and fight anything they meet on the way.',
+    done:()=>myUnits(u=>u.def.dmg&&u.type!=='worker'&&(u.order.type==='amove'||u.order.type==='attack')).length>0 },
+  { title:'Metals and your path', manual:'Got it',
+    text:()=>'When your workers first strike a metal (titanium, platinum, helium ice or radium), a card appears: your first metal picks a barracks specialist, your second a tech building with research, and your first deep metal your mega unit. Titanium also unlocks rovers, platinum walkers, ice flyers, radium mortars.' },
+  { title:'Going deep', manual:'Got it',
+    text:()=>'After your first metal, surveyors can deep-scan a site (D) and then core-drill it (C). A drilled site opens the deep zone below layer 5, where iridium and xenocrystal lie. Workers dig a terraced pit down to them, and those deep metals build your mega unit at the forge.' },
+  { title:'You\'re ready', manual:'Wake the enemy',
+    text:()=>`That's the core loop: dig, survey, build, pick your path, and push to the deep metals. The enemy base is over the horizon. Level every enemy structure to win. Press ? any time for the field manual. Good hunting.` },
+];
+function startTutorial(){ tut.on=true; tut.i=0; tut.stepT=0; enemyFrozen=true; P[ME].gold+=300; P[ME].ore+=200;
+  $('#tutor').classList.add('show'); tutRender(); toast('Tutorial started. The enemy is frozen until you finish.','market'); }
+function endTutorial(finished){ tut.on=false; enemyFrozen=false; $('#tutor').classList.remove('show'); tutClearHi(); if(tut.arrow) tut.arrow.style.display='none'; if(tut.beacon) tut.beacon.visible=false;
+  toast(finished?'Tutorial complete. The enemy is awake now: good luck!':'Tutorial closed. The enemy is awake now.','warn'); }
+function tutRender(){ const s=TUT[tut.i]; if(!s) return;
+  $('#tut-step').textContent=`Step ${tut.i+1} of ${TUT.length}`; $('#tut-title').textContent=s.title; $('#tut-text').textContent=s.text();
+  $('#tut-next').textContent=s.manual||'Skip step'; $('#tut-next').classList.toggle('primary',!!s.manual);
+  $('#tut-dots').innerHTML=TUT.map((_,k)=>`<i class="${k<tut.i?'d':k===tut.i?'c':''}"></i>`).join(''); }
+function tutNext(){ tut.i++; tut.stepT=0; tut.doneT=0; tutClearHi(); if(tut.i>=TUT.length){ endTutorial(true); return; } tutRender(); sfx('chime'); }
+function tutClearHi(){ for(const el of document.querySelectorAll('.tut-hi')) el.classList.remove('tut-hi'); }
+function tutTick(dt){
+  if(!tut.on) return; const s=TUT[tut.i]; if(!s) return; tut.stepT+=dt;
+  if(s.done && s.done()){ tut.doneT+=dt; if(tut.doneT>0.6){ const el=$('#tutor'); el.classList.add('ok'); setTimeout(()=>el.classList.remove('ok'),500); tutNext(); return; } }
+  if(Math.floor(tut.stepT*4)!==Math.floor((tut.stepT-dt)*4)) $('#tut-text').textContent=s.text();
+  const sel_=s.hi&&s.hi(); for(const el of document.querySelectorAll('.tut-hi')) if(!sel_||!el.matches(sel_)) el.classList.remove('tut-hi');
+  if(sel_){ const el=document.querySelector(sel_); if(el) el.classList.add('tut-hi'); }
+  /* a beacon and an arrow for spots on the ground */
+  if(!tut.arrow){ tut.arrow=document.createElement('div'); tut.arrow.id='tutArrow'; document.body.appendChild(tut.arrow); }
+  if(!tut.beacon){ tut.beacon=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,14,16,1,true).translate(0,7,0),new THREE.MeshBasicMaterial({ color:new THREE.Color(1.6,1.1,0.3), transparent:true, opacity:0.35, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide })); tut.beacon.frustumCulled=false; scene.add(tut.beacon); }
+  const w=s.world&&s.world();
+  tut.worldP=w?w.clone().normalize():null;
+  if(w){ const p=w.clone().normalize(), pos=p.clone().multiplyScalar(groundR(p)); tut.beacon.visible=true; placeOnSurface(tut.beacon,p,groundR(p),0); tut.beacon.material.opacity=0.25+0.15*Math.sin(tut.stepT*5);
+    const sp=screenOf(pos.clone().addScaledVector(p,1.2),p); const a=tut.arrow; a.style.display='block';
+    if(sp.ok&&sp.x>20&&sp.x<innerWidth-20&&sp.y>60&&sp.y<consoleTop-10){ a.className=''; a.style.left=sp.x+'px'; a.style.top=sp.y+'px'; a.innerHTML=`<span>${s.label||'Here'}</span>`; }
+    else { a.className='edge'; a.style.left=clamp(sp.ok?sp.x:innerWidth/2,90,innerWidth-90)+'px'; a.style.top=clamp(sp.ok?sp.y:consoleTop/2,80,consoleTop-30)+'px'; a.innerHTML='<span>Off screen: click to look</span>'; } }
+  else { tut.beacon.visible=false; tut.arrow.style.display='none'; }
+}
+document.addEventListener('click',e=>{ if(tut.on&&tut.worldP&&e.target.closest&&e.target.closest('#tutArrow.edge')){ centerOn(tut.worldP); mmDirty=true; } });
+$('#tut-next').addEventListener('click',()=>{ if(tut.on) tutNext(); });
+$('#tut-exit').addEventListener('click',()=>{ if(tut.on) endTutorial(false); });
+$('#tutBtn').addEventListener('click',()=>{ if(started) return; tutPending=true; $('#startBtn').click(); });
+
 let endT=0;
 function checkEnd(dt){ endT-=dt; if(endT>0) return; endT=1; const alive=(t)=>!P[t].surrender&&blds.some(b=>!b.dead&&b.team===t); if(!alive(FOE)) finish(true); else if(!alive(ME)) finish(false); }
 function finish(win){
@@ -4493,18 +4594,19 @@ $('#startBtn').addEventListener('click',()=>{
   if(lobby.started) return; if(lobby.named){ lobby.named.leave().catch(()=>{}); lobby.named=null; } MP=null;
   const foe=pickFoe==='random'?['terran','fowl','ceph','void'][Math.floor(rng()*4)%4]:pickFoe; setRaces(pickRace,foe);
   beginUI(pickRace,foe);
+  if(tutPending) startTutorial();
 });
 function beginUI(myRace,foe){
   $('#intro').style.display='none'; initAudio(); started=true;
-  if(myRace==='void') setTimeout(()=>toast('The hunt begins. Idle Vessk hunters fade into the void and strike from it for extra damage. Every kill pays gold and ore, but thralls dig slowly: hunt to grow.','find m2'),2600);
-  if(foe==='void') setTimeout(()=>toast('The enemy are Vessk: their hunters cloak when idle. Surveyors, sensor stations, turrets and your command hub reveal them nearby, and splash still hits them.','warn'),7000);
-  if(myRace==='ceph') setTimeout(()=>toast('The armada has surfaced. Cephalopods hatch from jelly eggs, squirt ink clouds that shield their squad when hurt, and regrow lost limbs.','find m2'),2600);
-  if(myRace==='fowl') setTimeout(()=>toast('The flock has landed. Birds hatch from eggs, hit harder in flocks, and regrow feathers between fights.','find m2'),2600);
-  setTimeout(()=>toast(`Enemy crew: ${RACE_NAMES[foe]}`,'warn'),3600);
+  if(myRace==='void') setTimeout(()=>tutPending||toast('The hunt begins. Idle Vessk hunters fade into the void and strike from it for extra damage. Every kill pays gold and ore, but thralls dig slowly: hunt to grow.','find m2'),2600);
+  if(foe==='void') setTimeout(()=>tutPending||toast('The enemy are Vessk: their hunters cloak when idle. Surveyors, sensor stations, turrets and your command hub reveal them nearby, and splash still hits them.','warn'),7000);
+  if(myRace==='ceph') setTimeout(()=>tutPending||toast('The armada has surfaced. Cephalopods hatch from jelly eggs, squirt ink clouds that shield their squad when hurt, and regrow lost limbs.','find m2'),2600);
+  if(myRace==='fowl') setTimeout(()=>tutPending||toast('The flock has landed. Birds hatch from eggs, hit harder in flocks, and regrow feathers between fights.','find m2'),2600);
+  setTimeout(()=>tutPending||toast(`Enemy crew: ${RACE_NAMES[foe]}`,'warn'),3600);
   const cc=blds.find(b=>b.team===ME&&b.type==='cc'), hs=ME?sites[sites[0].twin]:sites[0]; centerOn(offsetDir(cc.p,tangentToward(cc.p,hs.dir),3)); cam.h.copy(tangentToward(cam.t,hs.dir)); cam.distT=24;
-  setTimeout(()=>toast(`Select your ${myRace==='fowl'?'hens':myRace==='ceph'?'octopi':myRace==='void'?'thralls':'drones'} and right-click the staked site to start digging`,'good'),600);
-  setTimeout(()=>toast(`Every other deposit is buried. Train ${myRace==='fowl'?'an owl surveyor at the command roost':myRace==='ceph'?'a cuttlefish surveyor at the command reef':myRace==='void'?'a void seer at the lair':'a surveyor at the command hub'} (W) and set it to auto survey (U).`,'find'),5200);
-  setTimeout(()=>toast('Scroll far out to see the whole asteroid. The enemy base lies over the horizon.','market'),10000);
+  setTimeout(()=>tutPending||toast(`Select your ${myRace==='fowl'?'hens':myRace==='ceph'?'octopi':myRace==='void'?'thralls':'drones'} and right-click the staked site to start digging`,'good'),600);
+  setTimeout(()=>tutPending||toast(`Every other deposit is buried. Train ${myRace==='fowl'?'an owl surveyor at the command roost':myRace==='ceph'?'a cuttlefish surveyor at the command reef':myRace==='void'?'a void seer at the lair':'a surveyor at the command hub'} (W) and set it to auto survey (U).`,'find'),5200);
+  setTimeout(()=>tutPending||toast('Scroll far out to see the whole asteroid. The enemy base lies over the horizon.','market'),10000);
   setSel(units.filter(u=>u.team===ME&&u.type==='worker'));
 }
 function resize(){
@@ -4555,13 +4657,13 @@ function frame(now){
   updateSites(dt,now); updateXray(now); updateCutaway(dt,now); updateAssay(dt); updateRange();
   simT.sub=(simT.sub||0)-dt; if(simT.sub<=0){ simT.sub=0.3; updateSubTex(); }
   { const sv=sel.some(e=>!e.dead&&e.type==='surveyor'&&e.team===ME); const tgt=Math.max([0,0.45,0.85][subMode], sv?0.8:0); fogU.uSubStr.value+=(tgt-fogU.uSubStr.value)*Math.min(1,dt*6); fogU.uTime.value=now*0.001; }
-  musicTick(dt); updatePortrait(dt); updateFogTex(dt); updateFloaters(dt); updateGhost(); updateHover(dt); drawMinimap(dt);
+  musicTick(dt); tutTick(rawDt); updatePortrait(dt); updateFogTex(dt); updateFloaters(dt); updateGhost(); updateHover(dt); drawMinimap(dt);
   simT.ui-=dt; if(simT.ui<=0||uiDirty){ simT.ui=0.2; renderTop(); renderPanel(); renderCard(uiDirty); renderMarket(); uiDirty=false; }
   if(gradePass) gradePass.uniforms.uTime.value=now*0.001;
   if(composer&&!gfxLow) composer.render(); else renderer.render(scene,camera);
   if(firstFrame){ firstFrame=false; const sb=$('#startBtn'); sb.disabled=false; sb.textContent='Begin operation'; }
 }
 /* screenshot and test hook, only with ?dbg in the address */
-try{ if(/dbg/.test(location.search)) window.__g={ get units(){return units;}, get blds(){return blds;}, P, spawnUnit, placeBuilding, centerOn, cam, setRaces, update, PB, EB, sites, offsetDir, tangentToward, cellOfV, cF, cU, cV, TD, BD, beginUI, explosion, fireAt, orderAMove, orderAttack, setSel, visT, expT, kill, get gameTime(){return gameTime;}, sfx, setSpeed:(v)=>{simSpeed=v;}, get AC(){return AC;}, get voices(){return voices;}, musicTick, get combatHeat(){return combatHeat;}, get MP(){return MP;}, stateHash, issue, ids }; }catch(e){}
+try{ if(/dbg/.test(location.search)) window.__g={ get tut(){return tut;}, get sel(){return sel;}, get units(){return units;}, get blds(){return blds;}, P, spawnUnit, placeBuilding, centerOn, cam, setRaces, update, PB, EB, sites, offsetDir, tangentToward, cellOfV, cF, cU, cV, TD, BD, beginUI, explosion, fireAt, orderAMove, orderAttack, setSel, visT, expT, kill, get gameTime(){return gameTime;}, sfx, setSpeed:(v)=>{simSpeed=v;}, get AC(){return AC;}, get voices(){return voices;}, musicTick, get combatHeat(){return combatHeat;}, get MP(){return MP;}, stateHash, issue, ids }; }catch(e){}
 requestAnimationFrame(frame);
 </script></body></html>
