@@ -876,7 +876,18 @@ function fogPatch(m, emisAttr){
   if(emisAttr) m.customProgramCacheKey=()=>'emis';
   return m;
 }
-const std=(p)=>fogPatch(new THREE.MeshStandardMaterial(p));
+/* Siege of Legends shading: models use flat toon bands instead of glossy metal, so they read like the SoL sprites (flat colour, lighter where lit, darker on the back) */
+const TOON_RAMP=(()=>{ const t=new THREE.DataTexture(new Uint8Array([105,105,105,255, 178,178,178,255, 255,255,255,255]),3,1,THREE.RGBAFormat); t.minFilter=t.magFilter=THREE.NearestFilter; t.needsUpdate=true; return t; })();
+const std=(p)=>{ const q={ ...p }; delete q.roughness; delete q.metalness; delete q.envMapIntensity; return fogPatch(new THREE.MeshToonMaterial({ ...q, gradientMap:TOON_RAMP })); };
+/* ink outline for units: a back-face shell pushed out along the normal by a fixed number of screen pixels, so every unit gets the SoL 1-pixel outline at any zoom */
+const outlineU={ uOut:{ value:new THREE.Vector2(0.004,0.004) } };
+const outlineMat=new THREE.ShaderMaterial({ side:THREE.BackSide, uniforms:outlineU,
+  vertexShader:`uniform vec2 uOut; void main(){ vec4 c=projectionMatrix*modelViewMatrix*vec4(position,1.0); vec3 n=normalMatrix*normal; vec2 d=(projectionMatrix*vec4(n,0.0)).xy;
+    float l=length(d); if(l>1e-5) c.xy+=d/l*uOut*c.w; gl_Position=c; }`,
+  fragmentShader:`void main(){ gl_FragColor=vec4(${INK.r.toFixed(4)},${INK.g.toFixed(4)},${INK.b.toFixed(4)},1.0); }` });
+function inkOutline(g){ const add=[]; g.traverse(o=>{ if(o.isMesh&&!o.userData.ink&&!o.userData.inked&&o.material&&!o.material.transparent&&o.geometry.attributes.normal) add.push(o); });
+  for(const o of add){ o.userData.inked=true; const sh=new THREE.Mesh(o.geometry,outlineMat); sh.userData.ink=true; sh.castShadow=false; sh.receiveShadow=false; sh.raycast=()=>{}; o.add(sh); }
+  return g; }
 
 /* ---------- sky ---------- */
 {
@@ -1146,7 +1157,8 @@ function decorateUnit(type,r,t){
     else if(type==='juggernaut'||type==='seraph'){ /* own model already */ }
   }
 }
-function buildUnitModel(type,t){
+function buildUnitModel(type,t){ const r=buildUnitModel1(type,t); inkOutline(r.g); return r; }
+function buildUnitModel1(type,t){
   if(P[t]&&P[t].race==='fowl') return buildBirdModel(type,t);
   if(P[t]&&P[t].race==='ceph') return buildCephModel(type,t);
   if(P[t]&&P[t].race==='void') return buildLizardModel(type,t);
@@ -1340,12 +1352,12 @@ const FOWL_U={
   skiff:{ name:'Falcon flyer', desc:'Helium-lifted falcon gunship. Flies over pits and ridges. Rovers and mortars cannot hit it.' },
   mortar:{ name:'Pelican lobber', desc:'Lobs radium eggs from its beak pouch. Out-ranges everything, but cannot fire close or at aircraft.' },
   walker:{ name:'Peacock lancer', desc:'A platinum tail-fan focuses a long beam that flattens structures.' },
-  breacher:{ name:'Goose brawler', desc:'Close-assault goose with a scatter cannon. Tough and short-ranged; honks and shreds infantry up close.' },
+  breacher:{ name:'Noobscrub goose', desc:'The studio\'s signature goose, now in a space helmet with a scatter cannon. Tough and short-ranged; honks and shreds infantry up close. Do not make eye contact.' },
   ranger:{ name:'Heron sniper', desc:'Long-necked marksman. Outranges almost everything and hits aircraft, but folds up close.' },
   grenadier:{ name:'Puffin bombardier', desc:'Lobs egg grenades. Splash damage against grouped ground units; cannot hit aircraft.' },
-  warlord:{ name:'Cassowary warlord', desc:'Goose brawlers + Claw armory. A striding dinosaur of a bird with twin scatter cannons. Brutal up close; cannot hit aircraft.' },
-  bastion:{ name:'Mother hen', desc:'Goose brawlers + Nest works. A brooding fortress hen that repairs every other friendly unit within 7 by 2.5% per second (not other megas).' },
-  rhino:{ name:'Turkey rampager', desc:'Goose brawlers + Migration hub. A fast, heavy charging turkey that crashes into lines and out again. Cannot hit aircraft.' },
+  warlord:{ name:'Cassowary warlord', desc:'Noobscrub geese + Claw armory. A striding dinosaur of a bird with twin scatter cannons. Brutal up close; cannot hit aircraft.' },
+  bastion:{ name:'Mother hen', desc:'Noobscrub geese + Nest works. A brooding fortress hen that repairs every other friendly unit within 7 by 2.5% per second (not other megas).' },
+  rhino:{ name:'Turkey rampager', desc:'Noobscrub geese + Migration hub. A fast, heavy charging turkey that crashes into lines and out again. Cannot hit aircraft.' },
   longbow:{ name:'Crane railgunner', desc:'Heron snipers + Claw armory. A rail lance with the longest reach on the rock. Hits air and ground; fragile up close.' },
   sentinel:{ name:'Great horned sentinel', desc:'Heron snipers + Nest works. An armoured owl tower with a beam stare. Long reach, very tough, hits air and ground.' },
   seraph:{ name:'Phoenix', desc:'Heron snipers + Migration hub. A crystal-fired firebird gunship. Its beam hits air and ground alike.' },
@@ -1400,13 +1412,13 @@ const MATF={
 function bird(o,t){
   const g=new THREE.Group(), P={}; const s=o.s||1;
   const legH=(o.leg||0.3)*s, bodyR=(o.bodyR||0.26)*s, hr=(o.headR||0.12)*s;
-  const mb=featherMat(o.body), mbl=featherMat(o.belly||o.body), mh=featherMat(o.headC||o.body);
+  const mb=featherMat(o.body), mbl=featherMat(o.belly||o.body), mh=featherMat(o.headC||o.body), mw=featherMat(o.wingC||o.body), ml=o.legC?featherMat(o.legC):MATF.leg;
   const legs=[];
   for(const sd of [-1,1]){ const hip=new THREE.Group(); hip.position.set(0.09*s*sd*(o.wide||1),legH,0); g.add(hip);
-    mk(cyl(0.028*s,0.034*s,legH*0.55,6),MATF.leg,0,-legH*0.27,0,hip);
+    mk(cyl(0.028*s,0.034*s,legH*0.55,6),ml,0,-legH*0.27,0,hip);
     const sh=new THREE.Group(); sh.position.y=-legH*0.55; hip.add(sh);
-    mk(cyl(0.022*s,0.028*s,legH*0.45,6),MATF.leg,0,-legH*0.22,0,sh);
-    mk(box(0.11*s,0.025*s,0.15*s),MATF.leg,0,-legH*0.44,0.035*s,sh);
+    mk(cyl(0.022*s,0.028*s,legH*0.45,6),ml,0,-legH*0.22,0,sh);
+    mk(box(0.11*s,0.025*s,0.15*s),ml,0,-legH*0.44,0.035*s,sh);
     hip.th=hip; hip.sh=sh; legs.push(hip); }
   P.legs=legs;
   const body=new THREE.Group(); body.position.y=legH+bodyR*0.72; g.add(body); P.body=body;
@@ -1418,7 +1430,7 @@ function bird(o,t){
   mk(box(bodyR*0.55,0.03*s,0.02*s),MAT.glow[t],0,bodyR*0.55,-bodyR*1.19,body).castShadow=false;
   const wings=[]; const span=(o.span||0.34)*s;
   for(const sd of [-1,1]){ const w=new THREE.Group(); w.position.set(sd*bodyR*0.75,bodyR*0.15,0); body.add(w);
-    mk(sph(1,10,6),mb,sd*span*0.45,0,-0.02*s,w).scale.set(span*0.55,0.045*s,bodyR*(o.air?1.1:0.95)); w.userData.sd=sd; wings.push(w); }
+    mk(sph(1,10,6),mw,sd*span*0.45,0,-0.02*s,w).scale.set(span*0.55,0.045*s,bodyR*(o.air?1.1:0.95)); w.userData.sd=sd; wings.push(w); }
   P.wings=wings;
   if(o.tail==='fan'){ const tg=new THREE.Group(); tg.position.set(0,bodyR*0.35,-bodyR*1.05); body.add(tg); P.fan=tg;
     const n=o.fanN||11, len=(o.fanLen||0.8)*s;
@@ -1465,7 +1477,8 @@ function buildBirdModel(type,t){
       r.P.dish=r.head; { const pr=new THREE.Group(); pr.position.set(0,0,r.bodyR*0.8); r.body.add(pr); r.P.probe=pr; }
       { const d=new THREE.Group(); d.position.set(0,r.bodyR*1.1,-r.bodyR*0.95); r.body.add(d); mk(geo('odish',()=>new THREE.SphereGeometry(0.16,12,6,0,Math.PI*2,0,Math.PI/3).rotateX(-Math.PI/2.4)),MAT.hull,0,0,0,d); mk(sph(0.04,8,6),MAT.amber,0,0.02,0.12,d); } break;
     case 'marine': r=bird({s:1.0,body:0xf1ece0,belly:0xf8f4ea,comb:true,neck:0.13,leg:0.3,tailC:0x1e3b2e,tailUp:-0.9,tailLen:1.2},t); wingGun(r,{len:0.5}); break;
-    case 'breacher': r=bird({s:1.15,body:0xdedad2,belly:0xf2f0ea,headC:0xdedad2,neck:0.24,leg:0.28,beakC:0xf07a1a,beak:0.12,tailC:0xc8c4bc},t);
+    case 'breacher': /* the signature Noobscrub goose, coloured like the noobscrubgames.com goose: white, lilac-grey wings, orange beak and feet */
+      r=bird({s:1.2,body:0xffffff,belly:0xffffff,headC:0xffffff,wingC:0xbcb6c9,tailC:0xd9d4e4,legC:0xff9a3c,neck:0.34,leg:0.28,beakC:0xff9a3c,beak:0.15,beakW:0.5,beakH:0.42,eye:0.2,headL:1.2,bl:1.35,span:0.4},t);
       mk(geo('brBar',()=>new THREE.CylinderGeometry(0.07,0.09,0.4,8).rotateX(Math.PI/2)),acc,0.18,r.bodyR*0.1,r.bodyR*0.9,r.body);
       r.P.muzzle=new THREE.Vector3(0.18,r.body.position.y+r.bodyR*0.1,r.bodyR*0.9+0.25); break;
     case 'ranger': r=bird({s:1.05,body:0x7d8ea3,belly:0xc9d3de,neck:0.34,leg:0.46,beak:0.2,beakW:0.25,crest:0x2a2f38,tailC:0x5a6a7d},t); wingGun(r,{len:0.8,mat:acc}); break;
@@ -3875,10 +3888,12 @@ const CHAR={
   fowl:{ ranks:{ marine:'Pvt.', breacher:'Sgt.', ranger:'Spc.', grenadier:'Cpl.', rover:'Rider', skiff:'Flt. Lt.', mortar:'Gunner', walker:'Sir', surveyor:'Hoot' },
     first:['Cluckworth','Henrietta','Pecksalot','Featherby','Drumstick','Nugget','Eggbert','Clucky McCluckface','Beaky','Wingston','Pip','Roostervelt','Plume','Goosey','Chirpson','Gizzard','Maran','Buff Orpington','Sussex','Ruffles','Scratch','Omelette','Waddle','Talonsworth'],
     worker:(h)=>`${['Hen','Pullet','Biddy','Clucker'][h%4]} #${1+h%99}`, mega:['Grand Dame Featherstone','The Colossal Cluck','Lord Wattle III','Mother Goose','The Phoenix Queen','General Drumstick','His Royal Beakness','Old Speckled'],
+    geese:['The Goose','Sir Honksalot','Lord Honkington','Gander the Grey','Big Goose','Goosifer','Honk Norris','Mother Goose\'s Problem Child','The Noobscrub Goose','Waddles of Doom'],
     pitch:1.65, rate:1.22,
     lines:{ army:{ select:['Bawk? Ready!','Feathers fluffed, Commander!','Cluck cluck, what\'s up?','Egg-cellent timing!','I\'m all ears. Well, ear holes.','Bok bok!'], move:['Flapping over!','Beak first!','Cluck, on the way!','Wings out!','Waddling with purpose!'], attack:['Peck them to pieces!','Fowl play!','Ruffle their feathers!','BAWK! Charge!','Omelette time!'], ready:['Freshly hatched and ready!','Out of the shell, into the fight!'], hurt:['They\'re plucking us!','Feathers everywhere! Help!','Cluck! Under attack!'] },
       worker:{ select:['Scratching for ore!','Peck, peck, dig.','Got seeds? No? Ore then.'], move:['Pecking away!','Scratch that, on it!','Cluck, hauling!'], ready:['Hatched and ready to scratch!'] },
       survey:{ select:['Whooo needs a survey?','I see everything down there.','Hoo hoo. Listening.'], move:['Gliding over.','Silent wings, moving.'], ready:['The night-eyes are open.'] },
+      goose:{ select:['HONK.','Honk? HONK.','The goose is listening. Unfortunately.','You again.'], move:['Waddling with menace.','HONK HONK, coming through!','Out of my way, hens.'], attack:['HONK!!','Goose them!','Wings out, beak first!','This is my rock now.'], ready:['The goose has entered the asteroid.','HONK. I have arrived.'], hurt:['They plucked the goose! Big mistake.','HOOONK! Back me up!'] },
       mega:{ select:['The flock follows me.','Behold the apex of poultry.','BAWK. Speak.'], move:['Make way for greatness!','Strutting forward.'], attack:['Feel the fury of the flock!','CLUCK DESTRUCTION!'], ready:['The golden egg has hatched!'] } } },
   ceph:{ ranks:{ marine:'Squidling', breacher:'Bruiser', ranger:'Marksquid', grenadier:'Bomber', rover:'Dasher', skiff:'Jet-pilot', mortar:'Shellgunner', walker:'Lancer', surveyor:'Seer' },
     first:['Inkwell','Squidney','Octavia','Tentaclés','Calamara','Sepia','Barnaby','Nautica','Glubson','Mollie','Siphon','Kraken Jr.','Coral','Bubbles','Ammo-nite','Quill','Marlo','Suckerton','Loligo','Pearl','Chromia','Abyssa','Tide','Murk'],
@@ -3897,11 +3912,11 @@ const CHAR={
       survey:{ select:['The void whispers where metal sleeps.','I taste the rock.'], move:['Following the whispers.'], ready:['The seer awakens.'] },
       mega:{ select:['Kneel before the apex.','I devour worlds.','Sssmall thing. Speak.'], move:['The world shakes beneath me.'], attack:['Consume them all!','Nothing escapes!'], ready:['The altar has given birth to hunger.'] } } },
 };
-function unitClass(u){ return u.def.mega?'mega':u.type==='worker'?'worker':u.type==='surveyor'?'survey':'army'; }
+function unitClass(u){ return u.def.mega?'mega':u.type==='worker'?'worker':u.type==='surveyor'?'survey':(u.type==='breacher'&&raceOf(u.team)==='fowl')?'goose':'army'; }
 function unitHash(u,n){ return Math.floor(hash3(u.id,u.team*7+3,n)*1e6); }
 function nameOf(e){ if(!e||e.kind!=='unit') return e?e.def.name:''; if(e.pname) return e.pname;
   const C=CHAR[raceOf(e.team)]||CHAR.terran, h=unitHash(e,17);
-  const nm=e.def.mega?C.mega[h%C.mega.length]:e.type==='worker'?C.worker(h):`${C.ranks[e.type]||'Pvt.'} ${C.first[h%C.first.length]}`;
+  const nm=e.def.mega?C.mega[h%C.mega.length]:e.type==='worker'?C.worker(h):(C.geese&&e.type==='breacher')?C.geese[h%C.geese.length]:`${C.ranks[e.type]||'Pvt.'} ${C.first[h%C.first.length]}`;
   return e.pname=nm; }
 /* voices */
 let enVoices=[]; function loadVoices(){ try{ const v=speechSynthesis.getVoices(); enVoices=v.filter(x=>/^en/i.test(x.lang)); if(!enVoices.length) enVoices=v; }catch(e){} }
@@ -3920,10 +3935,12 @@ function voiceLine(u,kind,force){
 }
 function showSubtitle(who,text){ const el=$('#subtitle'); if(!el) return; el.innerHTML=''; const b=document.createElement('b'); b.textContent=who+': '; el.appendChild(b); el.appendChild(document.createTextNode(text)); el.classList.add('show'); clearTimeout(subtitleT); subtitleT=setTimeout(()=>el.classList.remove('show'),2600); }
 /* live portrait: the selected unit or building, rendered by its own small renderer */
+const PORTRAIT_PX=56;
 const portrait={ r:null, scene:null, cam:null, pivot:null, forE:null, canvas:null, t:0, talk:0, acc:0, h:1 };
 function initPortrait(){ if(portrait.r!==null) return portrait.r;
-  try{ const cv=document.createElement('canvas'); cv.className='pcan'; const r=new THREE.WebGLRenderer({ canvas:cv, alpha:true, antialias:true });
-    r.setPixelRatio(Math.min(devicePixelRatio,2)); r.setSize(120,120,false); r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.25;
+  try{ const cv=document.createElement('canvas'); cv.className='pcan'; const r=new THREE.WebGLRenderer({ canvas:cv, alpha:true, antialias:false });
+    /* a small pixel-art portrait, shown pixelated like the Siege of Legends champion cards */
+    r.setPixelRatio(1); r.setSize(PORTRAIT_PX,PORTRAIT_PX,false); cv.style.imageRendering='pixelated'; r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.25;
     const sc=new THREE.Scene(); sc.add(new THREE.HemisphereLight(0x9fb4ff,0x2a2119,1.1)); const key=new THREE.DirectionalLight(0xfff0dc,2.6); key.position.set(2.5,3,4); sc.add(key);
     const rim=new THREE.DirectionalLight(0x5fa8ff,2.2); rim.position.set(-3,2,-4); sc.add(rim);
     const cam=new THREE.PerspectiveCamera(30,1,0.05,60); const pivot=new THREE.Group(); sc.add(pivot);
@@ -3939,7 +3956,7 @@ function portraitFor(e){ if(!initPortrait()) return; if(portrait.forE===e) retur
 function updatePortrait(dt){ const P_=portrait; if(!P_.r||!P_.forE||!P_.canvas.isConnected) return; P_.acc+=dt; if(P_.acc<1/30) return; const step=P_.acc; P_.acc=0;
   P_.t+=step; P_.talk=Math.max(0,P_.talk-step);
   P_.pivot.rotation.y=Math.sin(P_.t*0.5)*0.55-0.25; const talking=P_.talk>0?Math.abs(Math.sin(P_.t*14))*0.04:0; P_.pivot.position.y=Math.sin(P_.t*1.6)*0.02*P_.h+talking*P_.h; P_.pivot.scale.setScalar(1+talking*0.5);
-  fogU.uNoFog.value=1; try{ P_.r.render(P_.scene,P_.cam); }catch(e){} fogU.uNoFog.value=0; }
+  fogU.uNoFog.value=1; const o0=outlineU.uOut.value.clone(); outlineU.uOut.value.set(2/PORTRAIT_PX,2/PORTRAIT_PX); try{ P_.r.render(P_.scene,P_.cam); }catch(e){} outlineU.uOut.value.copy(o0); fogU.uNoFog.value=0; }
 
 let panelSig='';
 const hpColor=(f)=>f>0.6?'var(--good)':f>0.3?'var(--gold)':'var(--bad)';
@@ -4675,6 +4692,7 @@ function resize(){
   renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   if(composer) composer.setSize(innerWidth,innerHeight); if(bloomPass) bloomPass.setSize(innerWidth,innerHeight);
   if(gfxMode==='pixel') pixSetSize();
+  { const px=gfxMode==='pixel'?1.1/pix.h:1.6/innerHeight; outlineU.uOut.value.set(2*px*innerHeight/innerWidth,2*px); }
   const sc=(gfxMode==='pixel'?pix.h:innerHeight)*0.5/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)); sparks.mat.uniforms.uScale.value=sc; dust.mat.uniforms.uScale.value=sc; xrMat.uniforms.uScale.value=sc;
 }
 addEventListener('resize',resize); resize();
