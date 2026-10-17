@@ -1,0 +1,56 @@
+# Builds the Android app (android/). Every run makes a debug APK you can sideload.
+# With the upload-key secrets set it also makes a signed release APK and the .aab for Google Play.
+#   Repository variable  ANDROID_HOST                 the site address, e.g. andromedas.you.workers.dev
+#   Repository secrets   ANDROID_KEYSTORE_BASE64      base64 of the upload keystore (.jks)
+#                        ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+name: Android app
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Site address the app opens (no https://)
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ inputs.host || vars.ANDROID_HOST || 'andromedas.example.workers.dev' }}
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Debug APK
+        run: gradle -p android --no-daemon assembleDebug -PandromedasHost="$HOST" -PversionCode=${{ github.run_number }}
+      - name: Upload key
+        if: env.HAS_KEY == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+      - name: Signed release APK and bundle
+        if: env.HAS_KEY == 'true'
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          gradle -p android --no-daemon assembleRelease bundleRelease -PandromedasHost="$HOST" -PversionCode=${{ github.run_number }}
+          echo "Put this fingerprint in wrangler.toml as ANDROID_CERT_SHA256:"
+          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | grep 'SHA256:'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: andromedas-android
+          path: |
+            android/app/build/outputs/apk/**/*.apk
+            android/app/build/outputs/bundle/**/*.aab

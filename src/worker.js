@@ -84,11 +84,21 @@ export class Ladder {
   }
 }
 
+/* Digital Asset Links: lets the Android app (android/) open this site full screen, with no browser bar.
+   ANDROID_CERT_SHA256 in wrangler.toml lists the app's signing-key fingerprints, comma-separated. */
+function assetLinks(env) {
+  const prints = String(env.ANDROID_CERT_SHA256 || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (!prints.length) return new Response('[]', { headers: { 'content-type': 'application/json' } });
+  return json([{ relation: ['delegate_permission/common.handle_all_urls'],
+    target: { namespace: 'android_app', package_name: env.ANDROID_PACKAGE || 'com.noobscrubgames.andromedas', sha256_cert_fingerprints: prints } }]);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const m = url.pathname.match(/^\/ws\/([a-z0-9][a-z0-9-]{0,47})$/);
     if (m) { const stub = env.ROOMS.get(env.ROOMS.idFromName(m[1])); return stub.fetch(request); }
+    if (url.pathname === '/.well-known/assetlinks.json') return assetLinks(env);
     if (url.pathname.startsWith('/ranked/')) return env.LADDER.get(env.LADDER.idFromName('ladder')).fetch(request);
     return env.ASSETS.fetch(request);
   }

@@ -363,6 +363,8 @@ body:not(.ingame) #topbar,body:not(.ingame) #console,body:not(.ingame) #devbar,b
 .setgrid{ display:grid; grid-template-columns:auto auto; gap:12px 18px; align-items:center; justify-content:start; font-family:'Fredoka'; font-size:17px; }
 .seg{ display:flex; gap:0; } .seg button{ border-radius:0; margin-left:-2px; font-size:15px; padding:7px 16px; } .seg button:first-child{ border-radius:6px 0 0 6px; margin-left:0; } .seg button:last-child{ border-radius:0 6px 6px 0; }
 .seg button.on{ background:var(--gold); color:#2a1a00; }
+.rk-xfer{ margin-top:20px; max-width:560px; } .xf-t{ font-size:13.5px; color:var(--dim); line-height:1.45; } .xf-t b{ color:var(--text); }
+#rkCode{ width:min(300px,60vw); background:#0f1430; border:1px solid var(--edge-hi); color:var(--text); font-family:'Fredoka'; font-size:14px; padding:7px 10px; } #rkCode:focus{ outline:none; border-color:var(--lamp); }
 #intro [data-v="settings"] .touchtips{ display:block; } body:not(.touch) #intro [data-v="settings"] .touchtips{ display:none; } body.touch #intro [data-v="settings"] ol{ display:block; }
 body.touch .brief ol, body.touch .keys{ display:none; }
 /* ---------- touch and phone layout ---------- */
@@ -535,6 +537,12 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
       <span>Graphics</span><div class="seg" id="setGfx"><button data-v="pixel">Pixel</button><button data-v="smooth">Smooth</button><button data-v="low">Low</button></div>
       <span>Music</span><div class="seg" id="setMus"><button data-v="on">On</button><button data-v="off">Off</button></div>
       <span>Studio intro</span><div class="seg" id="setIntro"><button data-v="on">On</button><button data-v="off">Off</button></div>
+    </div>
+    <div class="rk-xfer" id="rkXfer">
+      <span class="rp-l" style="display:block;width:auto">Ladder profile</span>
+      <div class="xf-t">Your rating lives in this browser. To play as the same miner on another phone, computer or browser, copy your code here and use it there. Anyone with the code can play as you.</div>
+      <div class="mp-row"><input id="rkCode" autocomplete="off" spellcheck="false" placeholder="ANDRO-…" aria-label="Ladder profile code"><button class="smbtn" id="rkCopy">Copy my code</button><button class="smbtn" id="rkUse">Use this code</button></div>
+      <div class="xf-t" id="rkXferNote"></div>
     </div>
     <h3 class="vh3">How to play</h3>
     <ul class="touchtips">
@@ -5555,7 +5563,21 @@ function syncSettings(){ const on=(id,v)=>{ for(const b of document.querySelecto
 for(const b of document.querySelectorAll('#setGfx button')) b.addEventListener('click',()=>{ let n=0; while(gfxMode!==b.dataset.v&&n++<3) $('#gfxBtn').click(); syncSettings(); });
 for(const b of document.querySelectorAll('#setMus button')) b.addEventListener('click',()=>{ if((b.dataset.v==='on')!==musicOn) $('#musBtn').click(); syncSettings(); });
 for(const b of document.querySelectorAll('#setIntro button')) b.addEventListener('click',()=>{ try{ localStorage.setItem('andro-intro',b.dataset.v); }catch(e){} syncSettings(); });
-if(!RK_BASE){ $('#rkbox').style.display='none'; $('#hRanked').querySelector('i').textContent='Play friends with a code'; }
+/* move a ladder profile between devices: the code is this device's player id and secret */
+if(RK_BASE){
+  $('#rkCode').addEventListener('keydown',e=>e.stopPropagation());
+  $('#rkCopy').addEventListener('click',()=>{ const o=rkIdent(), c=`ANDRO-${o.id}-${o.secret}`, inp=$('#rkCode'); inp.value=c; inp.select();
+    const done=()=>{ $('#rkXferNote').innerHTML='Copied. On the other device, open Settings, paste it into this box and tap <b>Use this code</b>.'; };
+    try{ navigator.clipboard.writeText(c).then(done,()=>{ document.execCommand('copy'); done(); }); }catch(e){ try{ document.execCommand('copy'); }catch(e2){} done(); } });
+  $('#rkUse').addEventListener('click',async()=>{ const m=($('#rkCode').value||'').trim().match(/^ANDRO-([a-z0-9]{12,32})-([a-z0-9]{16,128})$/i), note=$('#rkXferNote');
+    if(!m){ note.textContent='That does not look like a ladder code. It starts with ANDRO-.'; return; }
+    const id=m[1].toLowerCase(), secret=m[2].toLowerCase(), cur=rkIdent(); if(id===cur.id){ note.textContent='That is already this device\'s profile.'; return; }
+    note.textContent='Checking the code…'; let r=null; try{ r=await rkFetch('/ranked/me',{id,secret}); }catch(e){}
+    if(!r||!r.me){ note.textContent=r?'The ladder did not accept that code. Copy it again from the other device.':'The ladder could not be reached. Try again in a moment.'; return; }
+    rkSave({id,secret,name:r.me.name}); $('#rkName').value=r.me.name; rk.me=null; rkShowMe(r.me);
+    note.innerHTML=`Done. This device now plays as <b>${rkEsc(r.me.name)}</b>, ${r.me.rating} Elo.`; });
+}
+if(!RK_BASE){ $('#rkbox').style.display='none'; $('#rkXfer').style.display='none'; $('#hRanked').querySelector('i').textContent='Play friends with a code'; }
 showView('home');
 function beginUI(myRace,foe){
   $('#intro').style.display='none'; document.body.classList.add('ingame'); initAudio(); started=true;

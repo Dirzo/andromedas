@@ -22,6 +22,7 @@ On a phone the game goes fullscreen when a match starts, and it can be added to 
 - `src/relay.js`: the match relay itself (about 40 lines, no game logic).
 - `src/ranked.js`: ranked play: Elo maths, the matchmaking queue and match results, stored in the Ladder Durable Object's SQLite.
 - `test/ranked.test.mjs`: tests for the ranked logic (`node --test test/*.test.mjs`, Node 22 or newer).
+- `android/`: the Android app (see below). `.github/workflows/android.yml` builds it.
 - `wrangler.toml`: Cloudflare config (static assets, the two Durable Object bindings and their migrations).
 
 ## Deploy on Cloudflare (free plan works)
@@ -43,6 +44,18 @@ On the home screen, tap **Ranked multiplayer**, pick a crew and a name, and tap 
 - Both screens report the result. Ratings move when the reports agree, or when only one report arrives within two minutes (the other player closed the game). If the reports disagree, nothing changes.
 - Surrendering, or leaving a match in progress, counts as a loss. If your opponent never connects, the match is called off with no rating change.
 - There are no accounts: the browser keeps a random player id and secret. Clearing the site's data starts a fresh ladder profile.
+
+## Android app
+
+`android/` is the Android app: a Trusted Web Activity that opens the live site full screen, landscape, with no browser bar. Website deploys update the app too, with no new store release.
+
+**Ladder position.** The app runs inside the phone's Chrome, so it shares Chrome's storage for the site: if you already play ranked in Chrome on that phone, the app keeps your rating and name. To move a profile anywhere else (another phone, a computer, a different browser), open **Settings → Ladder profile**, tap **Copy my code** and use it on the other device. Using a code replaces that device's own profile.
+
+**Build it.** GitHub Actions builds it on every change to `android/` (**Actions → Android app**, artifact `andromedas-android`).
+
+1. Set the repository variable `ANDROID_HOST` to the site address (for example `andromedas.<your-subdomain>.workers.dev`), or type it when you run the workflow by hand. The debug APK can be sideloaded straight away.
+2. For Google Play, make an upload key once (`keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`) and add the secrets `ANDROID_KEYSTORE_BASE64` (`base64 -w0 upload.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. The workflow then also builds the signed `.aab` to upload to the Play Console.
+3. Put the signing fingerprints in `wrangler.toml` as `ANDROID_CERT_SHA256` (comma-separated): the Play Console's **App signing key** SHA-256 (Setup → App integrity), plus your upload key's, which the workflow prints. Deploy, and the site serves them at `/.well-known/assetlinks.json`. Until that matches, Android shows a small address bar above the game.
 
 ## Playing friends with a code
 
