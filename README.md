@@ -4,6 +4,17 @@ A real-time strategy game on a small spherical asteroid with a diggable, layered
 
 The game is a single page (`public/index.html`, built with three.js from a CDN). Multiplayer runs through a small Cloudflare Worker: each match code gets its own Durable Object that relays the players' commands. Both players' browsers run the same deterministic simulation (lockstep), so the server never simulates anything and stays tiny.
 
+## Playing on a phone
+
+Andromedas plays in landscape on phones and tablets, and opens with the Noobscrub Games studio intro (tap to skip).
+
+- **Tap** a unit to select it; double-tap to grab every unit of that type on screen. **Tap the ground**, an enemy or a site to send the selection there.
+- **Drag** to pan, **pinch** to zoom, **twist** two fingers to turn. **Hold, then drag** to box-select.
+- The left bar grabs whole groups: **Workers**, **Army**, **Survey** and **Idle** workers (tap twice to jump to them). Tap unit icons in the bottom panel to keep just a few of them.
+- **Build** picks a worker and opens the build menu; tap the ground to move the building, then **Build here**. **Cancel** backs out of anything.
+
+On a phone the game goes fullscreen when a match starts, and it can be added to the home screen as an app (`public/manifest.webmanifest`).
+
 ## Files
 
 - `public/index.html`: the whole game.

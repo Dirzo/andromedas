@@ -1,0 +1,11 @@
+{
+  "name": "Andromedas",
+  "short_name": "Andromedas",
+  "description": "A competitive real-time strategy game on a diggable asteroid, by Noobscrub Games.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#151030",
+  "theme_color": "#161d3a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
