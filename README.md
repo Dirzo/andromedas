@@ -20,7 +20,9 @@ On a phone the game goes fullscreen when a match starts, and it can be added to 
 - `public/index.html`: the whole game.
 - `src/worker.js`: the Worker. Serves `public/` and connects `/ws/<match>` to that match's Durable Object.
 - `src/relay.js`: the match relay itself (about 40 lines, no game logic).
-- `wrangler.toml`: Cloudflare config (static assets, the Durable Object binding and its migration).
+- `src/ranked.js`: ranked play: Elo maths, the matchmaking queue and match results, stored in the Ladder Durable Object's SQLite.
+- `test/ranked.test.mjs`: tests for the ranked logic (`node --test test/*.test.mjs`, Node 22 or newer).
+- `wrangler.toml`: Cloudflare config (static assets, the two Durable Object bindings and their migrations).
 
 ## Deploy on Cloudflare (free plan works)
 
@@ -32,9 +34,19 @@ On a phone the game goes fullscreen when a match starts, and it can be added to 
 
 Note: this has to be a **Worker**, not a Pages project, because multiplayer needs the Durable Object.
 
-## Playing together
+## Ranked 1v1
 
-Open the site, pick a crew, and click **Host a match**. Send the 4-letter code to up to three friends; they open the same site, pick a crew, type the code and click **Join**. Everyone picks Blue or Red: players on the same side share one base and army, and an empty side is played by the computer. The host clicks **Start match**.
+On the home screen, tap **Ranked multiplayer**, pick a crew and a name, and tap **Find a ranked match**. The queue pairs you with someone close to your rating; the allowed gap starts at 100 points and widens by 20 a second while you wait. **Ladder** on the home screen shows the top 50.
+
+- Everyone starts at 1200 Elo. The K-factor is 48 for your first 10 games, 32 after that, and 24 from 2000 up. Beating an equal opponent is worth about 16 points once you are placed.
+- Tiers: Rock (under 1000), Copper, Iron (1200), Titanium (1400), Platinum (1600), Iridium (1800) and Andromeda (2000+).
+- Both screens report the result. Ratings move when the reports agree, or when only one report arrives within two minutes (the other player closed the game). If the reports disagree, nothing changes.
+- Surrendering, or leaving a match in progress, counts as a loss. If your opponent never connects, the match is called off with no rating change.
+- There are no accounts: the browser keeps a random player id and secret. Clearing the site's data starts a fresh ladder profile.
+
+## Playing friends with a code
+
+Open the site, tap **Ranked multiplayer**, pick a crew, and click **Host a match** under *Play friends with a code*. Send the 4-letter code to up to three friends; they open the same site, pick a crew, type the code and click **Join**. Everyone picks Blue or Red: players on the same side share one base and army, and an empty side is played by the computer. The host clicks **Start match**.
 
 No accounts are needed. Players should use the same browser engine if possible (Chrome or Edge on all machines), because the simulation must match bit for bit; the game warns you if the screens ever drift out of sync.
 

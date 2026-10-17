@@ -14,3 +14,12 @@ class_name = "Room"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+# Ranked play: one Ladder object holds the matchmaking queue and every player's rating (SQLite).
+[[durable_objects.bindings]]
+name = "LADDER"
+class_name = "Ladder"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Ladder"]

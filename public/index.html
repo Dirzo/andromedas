@@ -259,6 +259,17 @@ body.locked, body.locked *{ cursor:none !important; }
 #mpCode:focus{ outline:none; border-color:var(--lamp); }
 #mpRoster{ display:flex; flex-direction:column; gap:3px; margin:4px 0 6px; font-size:14px; } #mpRoster i{ color:var(--dim); font-style:normal; } #mpRoster .ai{ color:var(--dim); }
 #mpStatus{ font-size:13.5px; color:var(--dim); line-height:1.45; }
+.rkbox{ border-color:var(--lamp); }
+#rkName{ width:170px; background:#0f1430; border:1px solid var(--edge-hi); color:var(--text); font-family:'Fredoka'; font-size:17px; font-weight:600; padding:6px 10px; }
+#rkName:focus{ outline:none; border-color:var(--lamp); }
+.rk-me{ font-family:'Fredoka'; font-size:16px; color:var(--dim); } .rk-me b{ color:var(--text); } .rk-tier{ font-family:'Pixelify Sans','Fredoka'; font-weight:700; color:var(--gold); text-shadow:2px 2px 0 var(--ink); }
+#rkStatus{ font-size:13.5px; color:var(--dim); line-height:1.45; } #rkStatus b{ color:var(--text); }
+.rk-end{ font-family:'Fredoka'; font-size:20px; margin:-10px 0 22px; color:var(--dim); } .rk-end b{ color:var(--text); } .rk-end .up{ color:#5ee07a; } .rk-end .dn{ color:#ff5d8f; }
+#ladder{ position:fixed; inset:0; z-index:21; display:none; align-items:flex-start; justify-content:flex-start; padding:5vh 7vw; overflow-y:auto; background:rgba(11,15,36,.97); }
+.lad-list{ display:grid; grid-template-columns:auto 1fr auto auto auto; gap:2px 14px; align-items:baseline; font-family:'Fredoka'; font-size:16px; margin:0 0 22px; max-width:560px; }
+.lad-list .h{ color:var(--dim); font-size:13px; text-transform:uppercase; letter-spacing:.08em; } .lad-list .n{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lad-list .me{ color:var(--lamp); } .lad-list .r{ text-align:right; font-weight:700; } .lad-list .wl{ color:var(--dim); text-align:right; }
+.lad-list .gap{ grid-column:1/-1; color:var(--dim); text-align:center; }
 #mpbar{ position:fixed; top:58px; left:12px; z-index:9; display:none; gap:8px; align-items:center; font-family:'Fredoka'; font-size:15px; background:rgba(11,15,36,.8); border:1px solid var(--edge-hi); padding:4px 6px 4px 10px; }
 #mpbar button{ background:#161d3a; color:var(--text); border:1px solid var(--edge-hi); font-family:'Fredoka'; font-size:14px; padding:3px 10px; cursor:pointer; }
 #mpbar button:hover{ border-color:var(--lamp); }
@@ -327,6 +338,32 @@ body.touch #quick .qbtn img.pxi{ width:36px; height:36px; }
 
 .touchtips{ display:none; }
 body.touch .touchtips{ display:block; margin:0 0 14px; padding-left:1.1em; line-height:1.45; font-size:14px; max-width:60ch; } body.touch .touchtips li{ margin-bottom:4px; } body.touch .touchtips b{ color:var(--lamp); }
+/* landing page: a title, two big buttons and three small ones; each opens its own view */
+body:not(.ingame) #topbar,body:not(.ingame) #console,body:not(.ingame) #devbar,body:not(.ingame) #quick,body:not(.ingame) #placeBar{ visibility:hidden; }
+#intro .view{ display:none; } #intro[data-view="home"] .view[data-v="home"],#intro[data-view="solo"] .view[data-v="solo"],#intro[data-view="ranked"] .view[data-v="ranked"],#intro[data-view="settings"] .view[data-v="settings"]{ display:flex; }
+#intro .brief.view{ flex-direction:column; align-items:flex-start; }
+#intro[data-view="home"]{ justify-content:center; align-items:center; padding:4vh 5vw; background:radial-gradient(ellipse 70% 80% at 50% 50%,rgba(11,15,36,.55) 0,rgba(11,15,36,.9) 100%); }
+.home{ flex-direction:column; align-items:center; text-align:center; gap:0; margin:auto 0; }
+.home .wordmark{ font-size:clamp(52px,9.5vw,124px); white-space:nowrap; }
+.home-tag{ font-family:'Fredoka'; font-size:clamp(15px,2vw,22px); font-weight:500; color:var(--dim); margin:14px 0 clamp(18px,5vh,44px); }
+.home-big{ display:flex; gap:clamp(12px,2vw,22px); flex-wrap:wrap; justify-content:center; }
+.bigbtn{ display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; column-gap:14px; align-items:center; text-align:left; min-width:min(320px,80vw); padding:clamp(12px,2.4vh,20px) 24px clamp(12px,2.4vh,20px) 18px; cursor:pointer;
+  background:var(--gold); color:#2a1a00; border:3px solid var(--ink); border-radius:8px; box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 var(--ink); }
+.bigbtn.alt{ background:#5fd3ff; color:#0f1430; }
+.bigbtn:hover{ filter:brightness(1.08); } .bigbtn:active{ transform:translateY(3px); box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 3px 0 var(--ink); }
+.bigbtn .bb-ic{ grid-row:1/3; width:52px; height:52px; display:grid; place-items:center; background:rgba(15,20,48,.16); border-radius:6px; } .bigbtn .bb-ic img.pxi{ width:40px; height:40px; image-rendering:pixelated; }
+.bigbtn b{ font-family:'Fredoka'; font-size:clamp(22px,2.6vw,30px); font-weight:700; line-height:1.05; } .bigbtn i{ font-style:normal; font-size:14px; font-weight:600; opacity:.72; }
+.home-small{ display:flex; gap:12px; margin-top:clamp(16px,4vh,30px); flex-wrap:wrap; justify-content:center; }
+.smbtn,.backbtn,.seg button{ font-family:'Fredoka'; font-size:17px; font-weight:600; color:var(--text); background:var(--plate2); border:2px solid var(--ink); border-radius:6px; padding:9px 22px; cursor:pointer; box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 4px 0 var(--ink); }
+.smbtn:hover,.backbtn:hover,.seg button:hover{ background:#36448a; } .smbtn:active,.backbtn:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 2px 0 var(--ink); }
+.home-foot{ margin-top:clamp(12px,3vh,24px); font-size:13.5px; color:var(--dim); min-height:1.2em; } .home-foot b{ color:var(--text); }
+.backbtn{ font-size:15px; padding:6px 14px; margin-bottom:14px; }
+.vh{ font-family:'Fredoka'; font-size:clamp(30px,5vw,46px); font-weight:700; margin:0 0 16px; color:var(--text); } .vh3{ font-family:'Fredoka'; font-size:22px; margin:22px 0 10px; }
+.racehome{ width:100%; } #intro [data-v="ranked"] .rp-row:nth-child(2){ display:none; }
+.setgrid{ display:grid; grid-template-columns:auto auto; gap:12px 18px; align-items:center; justify-content:start; font-family:'Fredoka'; font-size:17px; }
+.seg{ display:flex; gap:0; } .seg button{ border-radius:0; margin-left:-2px; font-size:15px; padding:7px 16px; } .seg button:first-child{ border-radius:6px 0 0 6px; margin-left:0; } .seg button:last-child{ border-radius:0 6px 6px 0; }
+.seg button.on{ background:var(--gold); color:#2a1a00; }
+#intro [data-v="settings"] .touchtips{ display:block; } body:not(.touch) #intro [data-v="settings"] .touchtips{ display:none; } body.touch #intro [data-v="settings"] ol{ display:block; }
 body.touch .brief ol, body.touch .keys{ display:none; }
 /* ---------- touch and phone layout ---------- */
 #view canvas{ touch-action:none; }
@@ -344,6 +381,9 @@ body.touch #quick #q-cancel{ display:none; } body.touch #quick #q-cancel.show{ d
 body.touch .cmd{ touch-action:manipulation; }
 /* phones in landscape: a short console, big buttons, the essentials on top */
 @media (max-height:540px), (max-width:760px){
+  .home .wordmark{ font-size:clamp(40px,13vh,64px); } .home-tag{ margin:6px 0 14px; } .bigbtn{ min-width:0; padding:10px 18px 10px 12px; } .bigbtn .bb-ic{ width:40px; height:40px; } .bigbtn .bb-ic img.pxi{ width:30px; height:30px; } .bigbtn b{ font-size:21px; } .bigbtn i{ font-size:12.5px; }
+  .home-small{ margin-top:14px; } .smbtn{ font-size:15px; padding:7px 16px; } .home-foot{ margin-top:8px; } .vh{ font-size:26px; margin-bottom:8px; } .backbtn{ margin-bottom:8px; }
+  #ladder{ padding:12px 5vw; } .lad-list{ font-size:14px; gap:1px 10px; } #rkName{ width:140px; font-size:15px; } .rk-end{ font-size:16px; margin:-4px 0 12px; }
   :root{ --console-h:118px; }
   #console{ grid-template-columns:var(--console-h) minmax(0,1fr) min(46vw,360px); }
   #cmdCard{ grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(2,1fr); gap:5px; padding:5px; margin:6px 6px 6px 0; }
@@ -450,10 +490,53 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
 <div id="mpbar"><span id="mp-vs">Versus</span><button id="mpPause" title="P">Pause</button><button id="mpGG">Surrender</button></div>
 <div id="mpwait"><span id="mpwait-t">Waiting for your opponent…</span></div>
 
-<div id="intro">
-  <div class="brief">
-    <h1 class="wordmark">ANDRO<br>MEDAS</h1>
-    <div class="tag">Asteroid 2291 Kestrel, out in the Andromedas. Two mining crews, one rock, and a lot of ground in between.</div>
+<div id="intro" data-view="home">
+  <div class="home view" data-v="home">
+    <h1 class="wordmark">ANDROMEDAS</h1>
+    <div class="home-tag">Dig deep, build fast, take the rock.</div>
+    <div class="home-big">
+      <button class="bigbtn" id="hSolo"><span class="bb-ic" data-ic="worker"></span><b>Single player</b><i>You against the computer</i></button>
+      <button class="bigbtn alt" id="hRanked"><span class="bb-ic" data-ic="attack"></span><b>Ranked multiplayer</b><i>1v1 on the Elo ladder</i></button>
+    </div>
+    <div class="home-small"><button class="smbtn" id="hTut">Tutorial</button><button class="smbtn" id="hLadder">Ladder</button><button class="smbtn" id="hSettings">Settings</button></div>
+    <div class="home-foot" id="homeFoot">Loading terrain…</div>
+  </div>
+  <div class="brief view" data-v="solo">
+    <button class="backbtn" data-back>‹ Back</button>
+    <h2 class="vh">Single player</h2>
+    <div class="racehome" data-race></div>
+    <button class="go" id="startBtn" disabled>Loading terrain…</button>
+  </div>
+  <div class="brief view" data-v="ranked">
+    <button class="backbtn" data-back>‹ Back</button>
+    <h2 class="vh">Multiplayer</h2>
+    <div class="racehome" data-race></div>
+    <div class="mpbox rkbox" id="rkbox">
+      <span class="rp-l" style="display:block;width:auto">Ranked 1v1</span>
+      <div class="mp-row"><input id="rkName" maxlength="16" placeholder="your name" autocomplete="off" spellcheck="false" aria-label="Your name for the ladder">
+        <span id="rkMe" class="rk-me"></span></div>
+      <div class="mp-row"><button class="go" id="rkFind">Find a ranked match</button><button class="go ghost" id="rkCancel" style="display:none">Cancel</button><button class="go ghost" id="rkBoard">Ladder</button></div>
+      <div id="rkStatus">Play one opponent near your rating with the crew you picked above. Wins raise your Elo rating, losses lower it, and a surrender or walking out counts as a loss.</div>
+    </div>
+    <div class="mpbox" id="mpbox">
+      <span class="rp-l" style="display:block;width:auto">Play friends with a code: up to 4, co-op or versus</span>
+      <div class="mp-row"><button class="go ghost" id="mpHost">Host a match</button><span style="color:var(--dim)">or</span>
+        <input id="mpCode" maxlength="4" placeholder="code" autocomplete="off" spellcheck="false" aria-label="Match code"><button class="go ghost" id="mpJoin">Join</button>
+        <button class="go" id="mpStart" style="display:none;font-size:18px;padding:8px 20px">Start match</button></div>
+      <div class="mp-row" id="mpSides" style="display:none"><span style="color:var(--dim)">Your side:</span><button class="racebtn sm sidebtn on" data-side="0"><b style="color:var(--you)">Blue</b></button><button class="racebtn sm sidebtn" data-side="1"><b style="color:var(--foe)">Red</b></button></div>
+      <div id="mpRoster"></div>
+      <div id="mpStatus">Pick your crew above, then host a match and send the code to up to three friends, or enter a code you were sent. Choose a side: players on the same side share one base and army, and a side with nobody on it is played by the computer. Each friend must be invited to this game by email from the Share menu and open it from that invite inside claude.ai; the public link alone can't join live matches.</div>
+    </div>
+  </div>
+  <div class="brief view" data-v="settings">
+    <button class="backbtn" data-back>‹ Back</button>
+    <h2 class="vh">Settings</h2>
+    <div class="setgrid">
+      <span>Graphics</span><div class="seg" id="setGfx"><button data-v="pixel">Pixel</button><button data-v="smooth">Smooth</button><button data-v="low">Low</button></div>
+      <span>Music</span><div class="seg" id="setMus"><button data-v="on">On</button><button data-v="off">Off</button></div>
+      <span>Studio intro</span><div class="seg" id="setIntro"><button data-v="on">On</button><button data-v="off">Off</button></div>
+    </div>
+    <h3 class="vh3">How to play</h3>
     <ul class="touchtips">
       <li><b>Tap</b> a unit to select it. <b>Tap the ground</b>, an enemy or a site to send it there.</li>
       <li><b>Drag</b> to pan, <b>pinch</b> to zoom, <b>twist</b> to turn. <b>Hold, then drag</b> to box-select.</li>
@@ -477,6 +560,8 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
       <kbd>Ctrl + 1–9, then 1–9</kbd><span>Save and recall control groups</span>
       <kbd>Command card keys</kbd><span>Shown on each button. P pauses</span>
     </div>
+  </div>
+  <div class="hidden-race" style="display:none">
     <div class="racepick">
       <div class="rp-row"><span class="rp-l">Your crew</span>
         <button class="racebtn on" data-grp="me" data-r="terran"><b>Humans</b><i>Drones, troopers, rovers and walkers.</i></button>
@@ -490,18 +575,8 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
         <button class="racebtn sm" data-grp="foe" data-r="ceph"><b>Cephalopods</b></button>
         <button class="racebtn sm" data-grp="foe" data-r="void"><b>Vessk</b></button></div>
     </div>
-    <button class="go" id="startBtn" disabled>Loading terrain…</button><button class="go ghost" id="tutBtn" title="A guided first game: the enemy waits while you learn">Play the tutorial</button>
-    <div class="mpbox" id="mpbox">
-      <span class="rp-l" style="display:block;width:auto">Play with friends: up to 4, co-op or versus</span>
-      <div class="mp-row"><button class="go ghost" id="mpHost">Host a match</button><span style="color:var(--dim)">or</span>
-        <input id="mpCode" maxlength="4" placeholder="code" autocomplete="off" spellcheck="false" aria-label="Match code"><button class="go ghost" id="mpJoin">Join</button>
-        <button class="go" id="mpStart" style="display:none;font-size:18px;padding:8px 20px">Start match</button></div>
-      <div class="mp-row" id="mpSides" style="display:none"><span style="color:var(--dim)">Your side:</span><button class="racebtn sm sidebtn on" data-side="0"><b style="color:var(--you)">Blue</b></button><button class="racebtn sm sidebtn" data-side="1"><b style="color:var(--foe)">Red</b></button></div>
-      <div id="mpRoster"></div>
-      <div id="mpStatus">Pick your crew above, then host a match and send the code to up to three friends, or enter a code you were sent. Choose a side: players on the same side share one base and army, and a side with nobody on it is played by the computer. Each friend must be invited to this game by email from the Share menu and open it from that invite inside claude.ai; the public link alone can't join live matches.</div>
-    </div>
-    <div class="loadnote">Built for mouse and keyboard.</div>
   </div>
+  <button id="tutBtn" style="display:none"></button>
 </div>
 
 <div id="help">
@@ -535,10 +610,19 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
   </div>
 </div>
 
+<div id="ladder">
+  <div class="brief">
+    <h1 class="wordmark" style="font-size:72px">LADDER</h1>
+    <div class="tag" id="ladTag">The best miners on the rock, by Elo rating.</div>
+    <div id="ladList" class="lad-list"></div>
+    <button class="go" id="ladClose">Back</button>
+  </div>
+</div>
 <div id="endscreen">
   <div class="brief">
     <h1 id="endTitle">Victory</h1>
     <div class="sum" id="endSum"></div>
+    <div class="rk-end" id="rkEnd" style="display:none"></div>
     <button class="go" id="againBtn">Play again</button>
   </div>
 </div>
@@ -1049,7 +1133,7 @@ window.SPLASH_SFX = SFX;
 </script>
 <script>
 /* play one studio skit at launch while the asteroid loads behind it; a tap or key skips it. ?nointro turns it off for testing. */
-if(window.startSplash&&!/nointro/.test(location.search)) startSplash(()=>{});
+if(window.startSplash&&!/nointro/.test(location.search)&&(()=>{ try{ return localStorage.getItem('andro-intro')!=='off'; }catch(e){ return true; } })()) startSplash(()=>{});
 </script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
@@ -5138,7 +5222,8 @@ function mpCreate(room,code,host){
      carries on with its other players, or the computer takes it over if nobody is left there */
   M_.vacate=(T)=>{ for(const o of M_.others.values()) if(o.left&&!o.vacated&&T>o.leftAt){ o.vacated=true;
       const still=M_.seats.some(s=>s.team===o.team&&(s.pid===M_.pid||!M_.others.get(s.peer).left));
-      if(!still){ aiTeams[o.team]=true; toast(o.team===ME?'Your teammates left. The computer is now helping you hold the side.':'The other side is empty now. The computer has taken it over.','warn'); }
+      if(!still&&M_.ranked){ P[o.team].surrender=true; toast(o.team===ME?'You left the ranked match.':'Your opponent left the match. That counts as a win for you.','good'); }
+      else if(!still){ aiTeams[o.team]=true; toast(o.team===ME?'Your teammates left. The computer is now helping you hold the side.':'The other side is empty now. The computer has taken it over.','warn'); }
       else toast(`${o.team===ME?'A teammate':'A player on the other side'} left the match.`,'warn'); } };
   M_.step=(dt)=>{ M_.acc=Math.min(M_.acc+dt,0.5); let n=0; const now=performance.now();
     while(M_.acc>=MP_DT && n<10 && !over){
@@ -5199,7 +5284,7 @@ async function mpRoom(){ if(lobby.room) return lobby.room;
   return lobby.room; }
 if(WS_BASE){ const st=document.getElementById('mpStatus'); if(st) st.textContent='Pick your crew above, then host a match and send the code to up to three friends. They open this same website, pick a crew and type the code in. Choose a side: players on the same side share one base and army, and a side with nobody on it is played by the computer.'; }
 function mpCode(){ const a='abcdefghjkmnpqrstuvwxyz23456789'; let c=''; for(let i=0;i<4;i++) c+=a[Math.floor(Math.random()*a.length)]; return c; }
-function mpPresence(){ if(lobby.named&&!lobby.started) lobby.named.presence({v:2,role:MP&&MP.host?'host':'guest',race:pickRace,side:lobby.side}).catch(()=>{}); }
+function mpPresence(){ if(MP&&MP.ranked) return; if(lobby.named&&!lobby.started) lobby.named.presence({v:2,role:MP&&MP.host?'host':'guest',race:pickRace,side:lobby.side}).catch(()=>{}); }
 /* the players in this lobby, host first, then everyone else in a stable order */
 function rosterOf(peers){ const me=peers.find(p=>p.sameTab);
   const list=peers.filter(p=>p.kind==='viewer'&&p.presence&&p.presence.v===2&&(p.presence.role==='host'||p.presence.role==='guest'));
@@ -5209,6 +5294,7 @@ function renderRoster(){ const el=$('#mpRoster'); if(!el) return; const r=lobby.
   el.innerHTML=r.length?[0,1].map(t=>{ const on=r.filter(p=>p.team===t);
     return `<div class="mp-side"><b style="color:${t?'var(--foe)':'var(--you)'}">${SIDE_NAME[t]} side</b> ${on.length?on.map((p,k)=>`<span>${p.me?'You':p.host?'Host':'Player'}${k===0?` <i>(${RACE_NAMES[p.race]})</i>`:''}</span>`).join(', '):'<span class="ai">computer</span>'}</div>`; }).join(''):''; }
 async function mpJoin(code,host){
+  if(rk.mid) return; if(rk.ws){ rkStop(); rkButtons(false); rkStatus('Search cancelled.'); }
   if(lobby.named){ try{ await lobby.named.leave(); }catch(e){} lobby.named=null; }
   const room=await mpRoom(); if(!room) return;
   mpStatus(host?'Opening a match…':'Joining match '+code.toUpperCase()+'…');
@@ -5246,6 +5332,7 @@ function mpBegin(go){
   $('#devbar').style.display='none'; $('#mpbar').style.display='flex';
   const mates=seats.filter(s=>s.team===MP.me).length-1, foes=seats.filter(s=>s.team!==MP.me).length;
   $('#mp-vs').textContent=`${SIDE_NAME[MP.me]} side${mates?` with ${mates} teammate${mates>1?'s':''}`:''} · versus ${foes?`${foes} player${foes>1?'s':''}`:'the computer'} (${RACE_NAMES[go.races[1-MP.me]]}) · match ${MP.code.toUpperCase()}`;
+  if(MP.ranked){ const f=MP.ranked.foe; $('#mp-vs').textContent=`Ranked · ${SIDE_NAME[MP.me]} side versus ${f.name} (${f.rating} ${f.tier}, ${RACE_NAMES[go.races[1-MP.me]]})`; $('#mpPause').style.display='none'; }
   beginUI(go.races[MP.me], go.races[1-MP.me]);
   if(mates) setTimeout(()=>toast('You share this side with your teammates: you all command the same units, buildings and stores. Talk it over!','good'),1800);
 }
@@ -5257,6 +5344,95 @@ $('#mpCode').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='En
 $('#mpStart').addEventListener('click',mpHostStart);
 $('#mpPause').addEventListener('click',()=>{ if(MP&&MP.live) issue({t:'halt',v:MP.halted?0:1}); });
 $('#mpGG').addEventListener('click',()=>{ if(MP&&MP.live&&!over&&confirm('Surrender this match for your whole side?')) issue({t:'gg'}); });
+/* ---------- ranked 1v1 ----------
+   Only on the game's own website, where the Worker runs the ladder (src/ranked.js). There are no
+   accounts: this device keeps a random id and secret, and the ladder knows the player by them.
+   The queue hands both players a private match code, a seed and their sides; the match itself then
+   runs through the same relay and lockstep as a friends' match. Both screens report who won, and
+   ratings move once the reports agree (or one report stands alone after a short wait). */
+const RK_BASE=WS_BASE?WS_BASE.replace(/^ws/,'http').replace(/\/ws\/?$/,''):null;
+const rk={ ws:null, mid:null, cancel:false, t0:0, tick:0, ka:0, noshow:0, reported:false, me:null };
+const rkStatus=(h)=>{ const e=$('#rkStatus'); if(e) e.innerHTML=h; };
+const rkEsc=(t)=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function rkIdent(){ let o=null; try{ o=JSON.parse(localStorage.getItem('andro-ranked')||'null'); }catch(e){}
+  if(!o||!/^[a-z0-9]{12,32}$/.test(o.id||'')||!o.secret){ const r=(n)=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');
+    o={ id:r(20), secret:r(32), name:(o&&o.name)||'' }; rkSave(o); }
+  return o; }
+function rkSave(o){ try{ localStorage.setItem('andro-ranked',JSON.stringify(o)); }catch(e){} }
+function rkFetch(path,body){ return fetch(RK_BASE+path,body?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'}).then(r=>r.json()); }
+function homeFootReady(){ const f=$('#homeFoot'); let ready=false; try{ ready=!firstFrame; }catch(e){} if(!f||!ready) return; const m=rk.me; f.innerHTML=m&&m.games?`Ranked: <span class="rk-tier">${rkEsc(m.tier)}</span> <b>${m.rating}</b>${m.rank?` · #${m.rank} on the ladder`:''}`:(TOUCH?'Built for touch: tap, drag, pinch.':'Built for mouse and keyboard, and phones.'); }
+function rkShowMe(me){ rk.me=me||rk.me; const m=rk.me, e=$('#rkMe'); homeFootReady(); if(!e) return; if(!m){ e.innerHTML='<span class="rk-tier">Iron</span> <b>1200</b> · unranked'; return; }
+  e.innerHTML=`<span class="rk-tier">${rkEsc(m.tier)}</span> <b>${m.rating}</b>${m.rank?` · #${m.rank}`:''} · ${m.games?`${m.wins}–${m.losses}${m.provisional?' · placing':''}`:'unranked'}`; }
+function rkButtons(searching){ $('#rkFind').style.display=searching?'none':''; $('#rkCancel').style.display=searching?'':'none'; $('#rkName').disabled=searching; }
+function rkStop(){ clearInterval(rk.tick); clearInterval(rk.ka); if(rk.ws){ rk.cancel=true; try{ rk.ws.close(); }catch(e){} rk.ws=null; } }
+function rkFind(){
+  if(lobby.started||rk.ws||rk.mid) return; const id=rkIdent(), nm=($('#rkName').value||'').trim();
+  if(nm.length<2){ rkStatus('Pick a name for the ladder first (2 to 16 letters).'); $('#rkName').focus(); return; }
+  id.name=nm; rkSave(id);
+  if(lobby.named){ lobby.named.leave().catch(()=>{}); lobby.named=null; MP=null; $('#mpStart').style.display='none'; $('#mpSides').style.display='none'; $('#mpRoster').innerHTML=''; }
+  let ws; try{ ws=new WebSocket(RK_BASE.replace(/^http/,'ws')+'/ranked/queue'); }catch(e){ rkStatus('Could not reach the ranked queue. Try again in a moment.'); return; }
+  rk.ws=ws; rk.cancel=false; rk.t0=performance.now(); rkButtons(true); rkStatus('Connecting to the ranked queue…'); let waiting=1;
+  const show=()=>{ const s=Math.floor((performance.now()-rk.t0)/1000); rkStatus(`Searching for an opponent near <b>${rk.me?rk.me.rating:1200}</b>… <b>${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</b> · ${waiting} in the queue. The search widens the longer you wait.`); };
+  ws.onopen=()=>ws.send(JSON.stringify({t:'queue',id:id.id,secret:id.secret,name:nm,race:pickRace}));
+  ws.onmessage=(ev)=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+    if(m.t==='queued'){ rkShowMe(m.me); waiting=m.waiting||1; show(); clearInterval(rk.tick); rk.tick=setInterval(show,1000); clearInterval(rk.ka); rk.ka=setInterval(()=>{ if(ws.readyState===1) ws.send('{"t":"ping"}'); },15000); }
+    else if(m.t==='pong') waiting=m.waiting||waiting;
+    else if(m.t==='match'){ rkStop(); rkStart(m); }
+    else if(m.t==='replaced'){ rkStop(); rkButtons(false); rkStatus('You started searching in another tab, so this one stopped.'); }
+    else if(m.t==='error'){ rkStop(); rkButtons(false); rkStatus(m.why==='sign-in failed'?'The ladder did not recognise this device\'s player id. Clear this site\'s data to start a fresh ladder profile.':'The ranked queue refused: '+rkEsc(m.why||'error')); } };
+  ws.onclose=()=>{ if(rk.ws!==ws) return; rk.ws=null; clearInterval(rk.tick); clearInterval(rk.ka); rkButtons(false); if(!rk.cancel) rkStatus('Lost the connection to the ranked queue. Search again when you are ready.'); };
+}
+async function rkStart(m){
+  rk.mid=m.mid; rk.reported=false; const f=m.foe;
+  rkStatus(`Opponent found: <b>${rkEsc(f.name)}</b> (${f.rating} ${rkEsc(f.tier)}). Connecting…`); $('#rkFind').style.display='none'; $('#rkCancel').style.display='none';
+  const room=await mpRoom(); let nr=null; if(room){ try{ nr=await room.join('andro-'+m.code); }catch(e){} }
+  if(!nr){ rkAbort('Could not connect to the match. No rating change.'); return; }
+  lobby.named=nr; MP=mpCreate(nr,m.code,false); MP.ranked={ mid:m.mid, side:m.side, foe:f };
+  nr.presence({v:3,rk:m.mid,side:m.side}).catch(()=>{});
+  rk.noshow=setTimeout(()=>{ if(!lobby.started) rkAbort(`${rkEsc(f.name)} never connected, so the match was called off. No rating change.`); },40000);
+  nr.onPeers(ch=>{
+    const me=ch.peers.find(p=>p.sameTab); if(me) lobby.peerLabel=me.peer;
+    if(!MP||!MP.ranked) return;
+    if(!MP.live){ const foe=ch.peers.find(p=>!p.sameTab&&p.presence&&p.presence.rk===m.mid&&p.presence.side===1-m.side);
+      if(!foe||!lobby.peerLabel) return; clearTimeout(rk.noshow);
+      const seats=[]; seats[m.side]=[lobby.peerLabel,m.side]; seats[1-m.side]=[foe.peer,1-m.side];
+      mpBegin({ seed:m.seed, races:m.races, ai:[false,false], seats }); if(!MP.live) return; }
+    for(const p of ch.peers) if(!p.sameTab&&p.presence&&MP.others.has(p.peer)) MP.recv(p.peer,p.presence.lk);
+    for(const p of ch.left) MP.leave(p.peer);
+  });
+}
+function rkAbort(msg){ clearTimeout(rk.noshow); const id=rkIdent(), mid=rk.mid; rk.mid=null;
+  if(mid) rkFetch('/ranked/result',{mid,id:id.id,secret:id.secret,outcome:'abort'}).catch(()=>{});
+  if(lobby.named){ lobby.named.leave().catch(()=>{}); lobby.named=null; } MP=null; rkButtons(false); rkStatus(msg); }
+function rkFinish(win){ if(rk.reported||!rk.mid) return; rk.reported=true; const id=rkIdent(), mid=rk.mid, el=$('#rkEnd');
+  el.style.display='block'; el.textContent='Ranked: sending the result…'; const t0=performance.now();
+  const show=(v)=>{ if(!v||v.error){ el.textContent='Ranked: the ladder could not be reached, so the result may not count.'; return true; }
+    const mine=v.a&&v.a.id===id.id?v.a:v.b;
+    if(v.status==='live'){ el.innerHTML='Ranked: waiting for the other screen to confirm the result…'; return false; }
+    if(v.status==='done'&&mine){ const d=mine.delta; el.innerHTML=`Ranked: <b class="${d>=0?'up':'dn'}">${d>=0?'+':''}${d} Elo</b>, now <b>${mine.rating}</b> <span class="rk-tier">${rkEsc(rkTier(mine.rating))}</span>`; rkFetch('/ranked/me',{id:id.id,secret:id.secret}).then(r=>rkShowMe(r.me)).catch(()=>{}); return true; }
+    el.textContent=v.status==='disputed'?'Ranked: the two screens disagreed on who won, so neither rating changed.':'Ranked: this match did not count. No rating change.'; return true; };
+  const poll=()=>rkFetch('/ranked/match?mid='+mid).then(v=>{ if(!show(v)&&performance.now()-t0<240e3) setTimeout(poll,4000); }).catch(()=>{ if(performance.now()-t0<240e3) setTimeout(poll,4000); else show(null); });
+  rkFetch('/ranked/result',{mid,id:id.id,secret:id.secret,outcome:win?'win':'loss'}).then(v=>{ if(!show(v)) setTimeout(poll,3000); }).catch(()=>setTimeout(poll,3000)); }
+const RK_TIERS=[[2000,'Andromeda'],[1800,'Iridium'],[1600,'Platinum'],[1400,'Titanium'],[1200,'Iron'],[1000,'Copper']];
+function rkTier(r){ for(const [min,n] of RK_TIERS) if(r>=min) return n; return 'Rock'; }
+async function rkBoard(){ $('#ladder').style.display='flex'; const L=$('#ladList'); L.innerHTML='<div class="gap">Loading…</div>';
+  let d; try{ d=await rkFetch('/ranked/ladder?id='+encodeURIComponent(rkIdent().id)); }catch(e){ L.innerHTML='<div class="gap">The ladder could not be reached. Try again in a moment.</div>'; return; }
+  if(d.me) rkShowMe(d.me); const myId=d.me&&d.me.id;
+  const row=(p)=>`<span class="${p.id===myId?'me':''}">#${p.rank}</span><span class="n ${p.id===myId?'me':''}">${rkEsc(p.name)}</span><span class="rk-tier">${rkEsc(p.tier)}</span><span class="r">${p.rating}</span><span class="wl">${p.wins}–${p.losses}</span>`;
+  if(!d.top||!d.top.length){ L.innerHTML='<div class="gap">Nobody has finished a ranked match yet. Be the first on the board.</div>'; return; }
+  let h='<span class="h">Rank</span><span class="h">Player</span><span class="h">Tier</span><span class="h r">Elo</span><span class="h wl">W–L</span>'+d.top.map(row).join('');
+  if(d.me&&d.me.rank&&!d.top.some(p=>p.id===myId)) h+='<div class="gap">…</div>'+row(d.me);
+  L.innerHTML=h; $('#ladTag').textContent=d.me&&d.me.rank?`You are #${d.me.rank} with ${d.me.rating} Elo.`:'The best miners on the rock, by Elo rating. Finish a ranked match to join them.'; }
+if(RK_BASE){
+  $('#rkbox').style.display=''; const id=rkIdent(); $('#rkName').value=id.name||''; rkShowMe(null);
+  if(id.name) rkFetch('/ranked/me',{id:id.id,secret:id.secret,name:id.name}).then(r=>{ if(r&&r.me) rkShowMe(r.me); }).catch(()=>{});
+  $('#rkName').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') rkFind(); });
+  $('#rkName').addEventListener('change',()=>{ const o=rkIdent(); o.name=($('#rkName').value||'').trim(); rkSave(o); });
+  $('#rkFind').addEventListener('click',rkFind);
+  $('#rkCancel').addEventListener('click',()=>{ rkStop(); rkButtons(false); rkStatus('Search cancelled.'); });
+  $('#rkBoard').addEventListener('click',rkBoard);
+  $('#ladClose').addEventListener('click',()=>{ $('#ladder').style.display='none'; });
+}
 
 /* =====================================================================
    Tutorial: an optional guided first game. A coach panel explains one step at a time, highlights the
@@ -5347,6 +5523,7 @@ function finish(win){
   $('#endSum').innerHTML=`${win?'Every enemy structure is rubble.':'Your last structure has fallen.'} Time on the rock <b>${m}:${String(s).padStart(2,'0')}</b>.<br>
     Surveyed <b>${r.surveyed}</b> site${r.surveyed===1?'':'s'} and dug out <b>${r.dug}</b> layers of rock. Mined <b>${r.mined[0]}</b> ore, <b>${r.mined[1]}</b> titanium, <b>${r.mined[2]}</b> platinum, <b>${r.mined[3]}</b> helium ice, <b>${r.mined[4]}</b> radium, <b>${r.mined[5]}</b> iridium and <b>${r.mined[6]}</b> xenocrystal. Earned <b>${r.sold}</b> gold from Space Command.<br>
     Destroyed <b>${r.killed}</b> enemy units and structures, lost <b>${r.lost}</b>.<br>You played <b>${RACE_NAMES[raceOf(ME)]}</b> against <b>${RACE_NAMES[raceOf(FOE)]}</b>. Your path: <b>${pathSummary(ME)}</b>. The enemy's: <b>${pathSummary(FOE)}</b>.${P[ME].hunted?` Your hunters took <b>${P[ME].hunted}</b> gold and ore from their kills.`:''}`;
+  if(MP&&MP.ranked) rkFinish(win);
   setTimeout(()=>{ $('#endscreen').style.display='flex'; },1400);
 }
 $('#againBtn').addEventListener('click',()=>location.reload());
@@ -5355,13 +5532,33 @@ $('#closeHelp').addEventListener('click',()=>{ $('#help').style.display='none'; 
 let pickRace='terran', pickFoe='random';
 for(const b of document.querySelectorAll('.racebtn')) b.addEventListener('click',()=>{ const grp=b.dataset.grp; for(const o of document.querySelectorAll(`.racebtn[data-grp="${grp}"]`)) o.classList.toggle('on',o===b); if(grp==='me') pickRace=b.dataset.r; else pickFoe=b.dataset.r; if(typeof mpPresence==='function') mpPresence(); });
 $('#startBtn').addEventListener('click',()=>{
-  if(lobby.started) return; if(lobby.named){ lobby.named.leave().catch(()=>{}); lobby.named=null; } MP=null;
+  if(lobby.started) return; if(RK_BASE) rkStop(); if(lobby.named){ lobby.named.leave().catch(()=>{}); lobby.named=null; } MP=null;
   const foe=pickFoe==='random'?['terran','fowl','ceph','void'][Math.floor(rng()*4)%4]:pickFoe; setRaces(pickRace,foe);
   beginUI(pickRace,foe);
   if(tutPending) startTutorial();
 });
+/* ---------- landing page ----------
+   Home shows the title, Single player and Ranked multiplayer, and Tutorial, Ladder and Settings.
+   The crew picker is one element that moves into whichever view is open. */
+function showView(v){ if(started) return; $('#intro').dataset.view=v; const box=document.querySelector(`#intro .view[data-v="${v}"] [data-race]`); if(box) box.appendChild(document.querySelector('.racepick')); $('#intro').scrollTop=0; }
+for(const b of document.querySelectorAll('#intro [data-back]')) b.addEventListener('click',()=>showView('home'));
+for(const e of document.querySelectorAll('#intro .bb-ic')) e.innerHTML=svg(e.dataset.ic,'#0f1430');
+$('#hSolo').addEventListener('click',()=>showView('solo'));
+$('#hRanked').addEventListener('click',()=>showView('ranked'));
+$('#hSettings').addEventListener('click',()=>{ syncSettings(); showView('settings'); });
+$('#hTut').addEventListener('click',()=>{ if(started) return; if($('#startBtn').disabled){ $('#homeFoot').textContent='The tutorial opens as soon as the terrain has loaded.'; return; } $('#tutBtn').click(); });
+$('#hLadder').addEventListener('click',()=>{ if(RK_BASE){ rkBoard(); return; } $('#ladder').style.display='flex'; $('#ladTag').textContent='The ladder lives on the game\'s own website.'; $('#ladList').innerHTML='<div class="gap">Ranked play and the ladder run on the Andromedas website build. This copy can still play friends with a code.</div>'; });
+addEventListener('keydown',e=>{ if(started||e.key!=='Escape') return; if($('#ladder').style.display==='flex') $('#ladder').style.display='none'; else if($('#intro').dataset.view!=='home') showView('home'); });
+function syncSettings(){ const on=(id,v)=>{ for(const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('on',b.dataset.v===v); };
+  let intro='on'; try{ if(localStorage.getItem('andro-intro')==='off') intro='off'; }catch(e){}
+  on('setGfx',gfxMode); on('setMus',musicOn?'on':'off'); on('setIntro',intro); }
+for(const b of document.querySelectorAll('#setGfx button')) b.addEventListener('click',()=>{ let n=0; while(gfxMode!==b.dataset.v&&n++<3) $('#gfxBtn').click(); syncSettings(); });
+for(const b of document.querySelectorAll('#setMus button')) b.addEventListener('click',()=>{ if((b.dataset.v==='on')!==musicOn) $('#musBtn').click(); syncSettings(); });
+for(const b of document.querySelectorAll('#setIntro button')) b.addEventListener('click',()=>{ try{ localStorage.setItem('andro-intro',b.dataset.v); }catch(e){} syncSettings(); });
+if(!RK_BASE){ $('#rkbox').style.display='none'; $('#hRanked').querySelector('i').textContent='Play friends with a code'; }
+showView('home');
 function beginUI(myRace,foe){
-  $('#intro').style.display='none'; initAudio(); started=true;
+  $('#intro').style.display='none'; document.body.classList.add('ingame'); initAudio(); started=true;
   if(TOUCH){ try{ const de=document.documentElement, fs=de.requestFullscreen||de.webkitRequestFullscreen; const r=fs&&!document.fullscreenElement&&fs.call(de); const lock=()=>{ try{ const q=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape'); if(q&&q.catch) q.catch(()=>{}); }catch(e){} }; if(r&&r.then) r.then(lock,()=>{}); else lock(); }catch(e){} }
   if(myRace==='void') setTimeout(()=>tutPending||toast('The hunt begins. Idle Vessk hunters fade into the void and strike from it for extra damage. Every kill pays gold and ore, but thralls dig slowly: hunt to grow.','find m2'),2600);
   if(foe==='void') setTimeout(()=>tutPending||toast('The enemy are Vessk: their hunters cloak when idle. Surveyors, sensor stations, turrets and your command hub reveal them nearby, and splash still hits them.','warn'),7000);
@@ -5430,9 +5627,9 @@ function frame(now){
   if(gradePass) gradePass.uniforms.uTime.value=now*0.001;
   if(gfxMode==='pixel'&&pix.rt){ renderer.setRenderTarget(pix.rt); renderer.render(scene,camera); renderer.setRenderTarget(null); renderer.render(pix.scene,pix.cam); }
   else if(composer&&gfxMode==='smooth') composer.render(); else renderer.render(scene,camera);
-  if(firstFrame){ firstFrame=false; const sb=$('#startBtn'); sb.disabled=false; sb.textContent='Begin operation'; }
+  if(firstFrame){ firstFrame=false; const sb=$('#startBtn'); sb.disabled=false; sb.textContent='Begin operation'; homeFootReady(); }
 }
 /* screenshot and test hook, only with ?dbg in the address */
-try{ if(/dbg/.test(location.search)) window.__g={ get tut(){return tut;}, get sel(){return sel;}, get units(){return units;}, get blds(){return blds;}, P, spawnUnit, placeBuilding, centerOn, cam, setRaces, update, PB, EB, sites, offsetDir, tangentToward, cellOfV, cF, cU, cV, TD, BD, beginUI, explosion, fireAt, orderAMove, orderAttack, setSel, visT, expT, kill, get gameTime(){return gameTime;}, sfx, setSpeed:(v)=>{simSpeed=v;}, get AC(){return AC;}, get voices(){return voices;}, musicTick, get combatHeat(){return combatHeat;}, get MP(){return MP;}, stateHash, issue, ids }; }catch(e){}
+try{ if(/dbg/.test(location.search)) window.__g={ get tut(){return tut;}, get MP(){return MP;}, get gameTime(){return gameTime;}, get over(){return over;}, get sel(){return sel;}, get units(){return units;}, get blds(){return blds;}, P, spawnUnit, placeBuilding, centerOn, cam, setRaces, update, PB, EB, sites, offsetDir, tangentToward, cellOfV, cF, cU, cV, TD, BD, beginUI, explosion, fireAt, orderAMove, orderAttack, setSel, visT, expT, kill, get gameTime(){return gameTime;}, sfx, setSpeed:(v)=>{simSpeed=v;}, get AC(){return AC;}, get voices(){return voices;}, musicTick, get combatHeat(){return combatHeat;}, get MP(){return MP;}, stateHash, issue, ids }; }catch(e){}
 requestAnimationFrame(frame);
 </script></body></html>
