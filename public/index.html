@@ -1146,6 +1146,7 @@ if(window.startSplash&&!/nointro/.test(location.search)&&(()=>{ try{ return loca
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 /* =====================================================================
    ANDROMEDAS: RTS on a spherical asteroid with a diggable layered crust
@@ -1723,7 +1724,7 @@ const UDEF = {
     desc:'Helium-lift gunship. Flies over mounds and ridges. Rovers and mortars cannot hit it.' },
   mortar: { name:'Radium mortar', hp:120, speed:2.6, dmg:24, range:11, minRange:3, cd:3.8, splash:1.5, sight:9, supply:3, cost:{gold:90,ore:80,rad:20}, time:26, r:0.55, h:1.1, icon:'mortar', hot:'Q', shot:'mortar', groundOnly:true,
     desc:'Radium-fired artillery. Out-ranges everything, but cannot fire at targets closer than 3 or at aircraft.' },
-  walker: { name:'Aurum walker', hp:450, speed:2.3, dmg:34, range:7.5, cd:2.3, splash:1.4, sight:10.5, supply:6, cost:{gold:150,ore:200,ti:30,pt:25}, time:34, r:0.82, h:2.2, icon:'walker', hot:'W', shot:'beam',
+  walker: { name:'Aurum walker', hp:450, speed:2.3, dmg:34, range:7.5, cd:2.3, splash:1.4, sight:10.5, supply:6, cost:{gold:150,ore:200,ti:30,pt:25}, time:34, r:0.82, h:1.9, icon:'walker', hot:'W', shot:'beam',
     desc:'Platinum-cored siege walker. Long-range beam that flattens structures.' },
   breacher: { name:'Breacher', hp:110, speed:3.5, dmg:12.5, range:2.8, cd:1.1, splash:0.7, sight:7, supply:2, cost:{gold:60,ore:60}, time:18, r:0.36, h:1.35, icon:'breacher', hot:'W', shot:'bullet', model:'marine', scale:1.18, spec:true,
     desc:'Close-assault trooper with a scatter cannon. Tough and short-ranged; shreds infantry up close.' },
@@ -1787,6 +1788,9 @@ function mk(g, m, x=0,y=0,z=0, parent){ const o=new THREE.Mesh(g,m); o.position.
 const MAT = {
   hull: std({ color:0xb9bec4, roughness:0.45, metalness:0.6 }),
   hullDark: std({ color:0x3a3f46, roughness:0.6, metalness:0.5 }),
+  pad: std({ color:0x5a6488, roughness:0.75, metalness:0.2 }),
+  suit: std({ color:0xf1efff, roughness:0.7, metalness:0.05 }),
+  visor: std({ color:0x6a4a10, emissive:0xffcf3a, emissiveIntensity:0.55, roughness:0.15, metalness:0.7 }),
   rubber: std({ color:0x1b1c1f, roughness:0.95 }),
   ti: std({ color:0x8fb3d9, roughness:0.3, metalness:0.85, envMapIntensity:1.3 }),
   pt: std({ color:0xe9d49a, roughness:0.22, metalness:0.92, envMapIntensity:1.5 }),
@@ -1803,8 +1807,9 @@ const MAT = {
   ir: std({ color:0xdfe6f5, roughness:0.18, metalness:0.95, envMapIntensity:1.6 }),
   xen: std({ color:0x2a0f40, emissive:0xb86bff, emissiveIntensity:2.4, roughness:0.15, metalness:0.3 }),
 };
-const box=(w,h,d)=>geo(`b${w},${h},${d}`,()=>new THREE.BoxGeometry(w,h,d));
-const cyl=(t,b,h,s=16)=>geo(`c${t},${b},${h},${s}`,()=>new THREE.CylinderGeometry(t,b,h,s));
+/* every box is a soft, rounded block: corners take about a quarter of the shortest side, so nothing reads as a crate */
+const box=(w,h,d)=>geo(`b${w},${h},${d}`,()=>{ const r=Math.min(w,h,d)*0.28; return r<0.012?new THREE.BoxGeometry(w,h,d):new RoundedBoxGeometry(w,h,d,2,r); });
+const cyl=(t,b,h,s=16)=>{ s=Math.max(s,16); return geo(`c${t},${b},${h},${s}`,()=>new THREE.CylinderGeometry(t,b,h,s)); };
 const sph=(r,w=16,h=12)=>geo(`s${r},${w},${h}`,()=>new THREE.SphereGeometry(r,w,h));
 
 /* path units reuse a base body, then add their own kit and metal accents */
@@ -1824,9 +1829,9 @@ function decorateUnit(type,r,t){
     const ring=mk(geo('megaRing',()=>new THREE.TorusGeometry(0.34,0.05,6,24).rotateX(Math.PI/2)),glow,0,top*0.95,0,g); ring.castShadow=false; parts.halo=ring;
     if(type==='bastion'){ const dome=new THREE.Mesh(geo('shieldDome',()=>new THREE.SphereGeometry(1.35,20,10,0,Math.PI*2,0,Math.PI/2)),new THREE.MeshBasicMaterial({ color:TEAMC[t].clone().multiplyScalar(0.8), transparent:true, opacity:0.12, depthWrite:false, side:THREE.DoubleSide })); dome.position.y=0.3; g.add(dome); parts.dome=dome; mk(box(1.3,0.1,1.3),acc,0,1.0,0,g); }
     else if(type==='rhino'){ mk(box(1.0,0.34,0.14),acc,0,0.36,0.74,g); for(const s of [-1,1]) mk(geo('horn',()=>new THREE.ConeGeometry(0.07,0.32,6).rotateX(Math.PI/2)),MAT.hullDark,0.3*s,0.42,0.9,g); }
-    else if(type==='warlord'){ for(const s of [-1,1]) mk(geo('wlGun',()=>new THREE.CylinderGeometry(0.12,0.15,0.7,10).rotateX(Math.PI/2)),acc,0.62*s,1.65,0.55,g); }
-    else if(type==='longbow'){ mk(box(0.1,0.1,2.2),acc,0,1.75,0.9,g); mk(box(0.24,0.16,0.3),glow,0,1.75,-0.2,g); }
-    else if(type==='sentinel'){ mk(box(0.8,0.3,0.6),acc,0,2.0,0,g); const d=mk(sph(0.16,12,8),glow,0,2.25,0.3,g); d.castShadow=false; }
+    else if(type==='warlord'){ for(const s of [-1,1]) mk(geo('wlGun',()=>new THREE.CylinderGeometry(0.12,0.15,0.7,10).rotateX(Math.PI/2)),acc,0.62*s,1.35,0.55,g); }
+    else if(type==='longbow'){ mk(box(0.1,0.1,2.2),acc,0,1.45,0.9,g); mk(box(0.24,0.16,0.3),glow,0,1.45,-0.2,g); }
+    else if(type==='sentinel'){ mk(box(0.8,0.3,0.6),acc,0,1.7,0,g); const d=mk(sph(0.16,12,8),glow,0,1.95,0.3,g); d.castShadow=false; }
     else if(type==='inferno'){ mk(box(0.5,0.12,0.5),acc,0,0.75,-0.1,g); }
     else if(type==='stormwing'){ const k=mk(geo('swCore',()=>new THREE.OctahedronGeometry(0.2,0)),glow,0,-0.12,0,body); k.castShadow=false; mk(box(1.6,0.04,0.3),acc,0,0.04,-0.15,body); }
     else if(type==='juggernaut'||type==='seraph'){ /* own model already */ }
@@ -1856,12 +1861,22 @@ function buildUnitModel0(type,t){
     const jet=mk(geo('jet',()=>new THREE.CircleGeometry(0.085,12).rotateX(Math.PI/2)),MAT.glow[t],0,-0.255,0,body); jet.castShadow=false;
     const cargo=mk(geo('cargoG',()=>new THREE.DodecahedronGeometry(0.14,0)),MAT.cargo[0],0,0.17,-0.17,body); cargo.visible=false; P.cargo=cargo;
   } else if(type==='marine'){
-    const legs=[]; for(const s of [-1,1]){ const hip=new THREE.Group(); hip.position.set(0.1*s,0.56,0); g.add(hip); mk(box(0.12,0.5,0.14),MAT.hullDark,0,-0.25,0,hip); mk(box(0.14,0.08,0.2),MAT.rubber,0,-0.52,0.03,hip); legs.push(hip); } P.legs=legs;
-    const up=new THREE.Group(); up.position.y=0.56; g.add(up); P.body=up;
-    mk(box(0.38,0.36,0.24),MAT.team[t],0,0.22,0,up); mk(box(0.3,0.22,0.06),MAT.hull,0,0.24,0.13,up);
-    mk(box(0.26,0.3,0.14),MAT.hullDark,0,0.22,-0.18,up);
-    mk(sph(0.13,14,10),MAT.hull,0,0.5,0,up); mk(box(0.18,0.06,0.06),MAT.glow[t],0,0.51,0.1,up);
-    mk(box(0.07,0.09,0.55),MAT.hullDark,0.2,0.24,0.2,up); P.muzzle=new THREE.Vector3(0.2,0.8,0.5);
+    /* a chibi astronaut: stubby suited legs, a puffy suit, a life-support pack and a big round helmet with a gold visor */
+    const legs=[]; for(const s of [-1,1]){ const hip=new THREE.Group(); hip.position.set(0.1*s,0.4,0); g.add(hip);
+      mk(geo('aLeg',()=>new THREE.CapsuleGeometry(0.075,0.16,4,10).translate(0,-0.16,0)),MAT.suit,0,0,0,hip);
+      mk(geo('aBoot',()=>new THREE.SphereGeometry(0.1,12,8).scale(1,0.7,1.35)),MAT.hullDark,0,-0.33,0.03,hip); legs.push(hip); } P.legs=legs;
+    const up=new THREE.Group(); up.position.y=0.4; g.add(up); P.body=up;
+    mk(geo('aTorso',()=>new THREE.SphereGeometry(0.21,16,12).scale(1,1.08,0.85)),MAT.suit,0,0.2,0,up);
+    mk(geo('aBelt',()=>new THREE.TorusGeometry(0.18,0.035,6,18).rotateX(Math.PI/2)),MAT.team[t],0,0.08,0,up).scale.set(1,1,0.86);
+    mk(box(0.16,0.11,0.05),MAT.team[t],0,0.24,0.16,up); mk(sph(0.025,8,6),MAT.glow[t],0.04,0.25,0.19,up); mk(sph(0.025,8,6),MAT.ptGlow,-0.04,0.25,0.19,up);
+    mk(box(0.26,0.3,0.14),MAT.hull,0,0.24,-0.19,up); for(const x of [-0.07,0.07]) mk(cyl(0.045,0.045,0.26,10),MAT.team[t],x,0.25,-0.28,up);
+    for(const s of [-1,1]) mk(geo('aArm',()=>new THREE.CapsuleGeometry(0.06,0.14,4,10).rotateX(1.1)),MAT.suit,0.2*s,0.22,0.08,up);
+    mk(geo('aHelm',()=>new THREE.SphereGeometry(0.21,20,14)),MAT.suit,0,0.56,0,up);
+    mk(geo('aVisor',()=>new THREE.SphereGeometry(0.175,18,12,Math.PI*0.08,Math.PI*0.84,Math.PI*0.25,Math.PI*0.42)),MAT.visor,0,0.56,0.05,up);
+    mk(geo('aRim',()=>new THREE.TorusGeometry(0.17,0.03,6,20)),MAT.hull,0,0.56,0.11,up).scale.set(1,0.85,1);
+    mk(cyl(0.012,0.012,0.18,6),MAT.hullDark,0.12,0.8,-0.04,up); mk(sph(0.03,8,6),MAT.glow[t],0.12,0.9,-0.04,up);
+    mk(box(0.08,0.1,0.42),MAT.hullDark,0.13,0.17,0.24,up); mk(cyl(0.03,0.03,0.16,8).clone().rotateX(Math.PI/2),MAT.hullDark,0.13,0.19,0.52,up);
+    P.muzzle=new THREE.Vector3(0.13,0.6,0.6);
   } else if(type==='rover'){
     mk(box(0.95,0.32,1.25),MAT.ti,0,0.42,0,g); mk(box(0.97,0.06,0.8),MAT.team[t],0,0.6,-0.1,g);
     mk(box(0.8,0.12,0.2),MAT.hullDark,0,0.42,0.66,g);
@@ -1888,23 +1903,33 @@ function buildUnitModel0(type,t){
     mk(box(0.06,0.3,0.3),MAT.hullDark,0,0.15,-0.4,hull);
     P.muzzle=new THREE.Vector3(0,0,0.8);
   } else if(type==='mortar'){
-    for(const s of [-1,1]) mk(box(0.22,0.26,1.1),MAT.rubber,0.38*s,0.16,0,g);
-    mk(box(0.6,0.3,0.95),MAT.hullDark,0,0.38,0,g); mk(box(0.62,0.05,0.5),MAT.team[t],0,0.55,-0.15,g);
-    for(const x of [-0.18,0.18]) mk(cyl(0.08,0.08,0.34,10),MAT.radGlow,x,0.62,-0.32,g);
-    const tur=new THREE.Group(); tur.position.set(0,0.58,0.1); g.add(tur); P.turret=tur;
-    mk(box(0.36,0.2,0.36),MAT.hull,0,0.05,0,tur);
-    const bar=new THREE.Group(); bar.position.set(0,0.12,0); bar.rotation.x=-0.85; tur.add(bar); P.barrel=bar;
-    mk(geo('mbar',()=>new THREE.CylinderGeometry(0.1,0.13,1.0,12).translate(0,0.5,0).rotateX(Math.PI/2)),MAT.ti,0,0,0,bar);
-    mk(cyl(0.135,0.135,0.08,12).clone().rotateX(Math.PI/2),MAT.radGlow,0,0,0.95,bar);
-    P.muzzle=new THREE.Vector3(0,1.4,0.8);
+    /* a proper mortar: a short, fat, wide-mouthed tube set steeply up on a round base plate, held by a bipod, riding a little tracked carriage */
+    for(const s of [-1,1]){ mk(geo('mTrack',()=>new THREE.CapsuleGeometry(0.15,0.72,4,12).rotateX(Math.PI/2)),MAT.rubber,0.36*s,0.17,0,g);
+      for(const z of [-0.3,0,0.3]) mk(geo('mBogie',()=>new THREE.CylinderGeometry(0.09,0.09,0.06,12).rotateZ(Math.PI/2)),MAT.hullDark,0.45*s,0.15,z,g); }
+    mk(box(0.6,0.24,0.9),MAT.hullDark,0,0.36,0,g); mk(box(0.62,0.06,0.42),MAT.team[t],0,0.5,-0.2,g);
+    for(const x of [-0.17,0,0.17]){ mk(geo('mShell',()=>new THREE.CapsuleGeometry(0.055,0.12,4,10)),MAT.radGlow,x,0.62,-0.32,g); }
+    const tur=new THREE.Group(); tur.position.set(0,0.5,0.12); g.add(tur); P.turret=tur;
+    mk(geo('mPlate',()=>new THREE.CylinderGeometry(0.3,0.33,0.07,20)),MAT.hull,0,0.03,-0.08,tur);
+    const bar=new THREE.Group(); bar.position.set(0,0.1,-0.12); bar.rotation.x=-1.0; tur.add(bar); P.barrel=bar;
+    mk(geo('mBreech',()=>new THREE.SphereGeometry(0.16,16,10).scale(1,1,1.1)),MAT.hullDark,0,0,0,bar);
+    mk(geo('mTube',()=>new THREE.CylinderGeometry(0.15,0.15,0.62,18,1,true).translate(0,0.31,0).rotateX(Math.PI/2)),MAT.ti,0,0,0,bar);
+    mk(geo('mBore',()=>new THREE.CircleGeometry(0.14,18)),MAT.rubber,0,0,0.61,bar);
+    mk(geo('mLip',()=>new THREE.TorusGeometry(0.155,0.04,8,20)),MAT.ti,0,0,0.62,bar);
+    mk(geo('mBand',()=>new THREE.TorusGeometry(0.155,0.03,6,20)),MAT.radGlow,0,0,0.3,bar);
+    /* bipod: two legs from under the tube's middle splay down to the deck, whatever the elevation */
+    for(const s of [-1,1]){ const dir=new THREE.Vector3(0.45*s,-Math.cos(1.0),-Math.sin(1.0)).normalize();
+      const leg=mk(geo('mBipod',()=>new THREE.CylinderGeometry(0.028,0.028,0.4,6).translate(0,-0.2,0)),MAT.hullDark,0,-0.12,0.34,bar); leg.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),dir);
+      mk(sph(0.045,8,6),MAT.hullDark,0,-0.12,0.34,bar).position.addScaledVector(dir,0.4); }
+    P.muzzle=new THREE.Vector3(0,1.25,0.6);
   } else if(type==='walker'){
-    const hip=new THREE.Group(); hip.position.y=1.35; g.add(hip); P.body=hip;
+    const hip=new THREE.Group(); hip.position.y=1.05; g.add(hip); P.body=hip;
     mk(box(0.95,0.5,0.85),MAT.pt,0,0.25,0,hip); mk(box(1.0,0.08,0.9),MAT.team[t],0,0.52,0,hip);
     mk(box(0.55,0.22,0.12),MAT.glass,0,0.3,0.45,hip); const core=mk(sph(0.17,14,10),MAT.ptGlow,0,0.2,-0.45,hip); core.castShadow=false; P.core=core;
     for(const s of [-1,1]){ mk(box(0.18,0.2,0.4),MAT.hullDark,0.6*s,0.3,0.1,hip); mk(geo('wcan',()=>new THREE.CylinderGeometry(0.06,0.06,0.9,10).rotateX(Math.PI/2)),MAT.hull,0.6*s,0.3,0.6,hip); }
-    const legs=[]; for(const s of [-1,1]){ const th=new THREE.Group(); th.position.set(0.36*s,1.35,0); g.add(th); mk(box(0.2,0.72,0.24),MAT.hullDark,0,-0.36,0,th);
-      const sh=new THREE.Group(); sh.position.y=-0.7; th.add(sh); mk(box(0.16,0.68,0.2),MAT.pt,0,-0.3,0,sh); mk(box(0.3,0.1,0.44),MAT.hullDark,0,-0.62,0.05,sh); legs.push({th,sh}); }
-    P.legs=legs; P.muzzle=new THREE.Vector3(0,1.65,1.1);
+    /* stubby, chunky legs and round feet: a toy walker, not a stilt-walker */
+    const legs=[]; for(const s of [-1,1]){ const th=new THREE.Group(); th.position.set(0.34*s,1.05,0); g.add(th); mk(box(0.28,0.52,0.3),MAT.hullDark,0,-0.24,0,th);
+      const sh=new THREE.Group(); sh.position.y=-0.48; th.add(sh); mk(box(0.26,0.44,0.28),MAT.pt,0,-0.2,0,sh); mk(geo('wFoot',()=>new THREE.SphereGeometry(0.22,14,8,0,Math.PI*2,0,Math.PI/2).scale(1,0.6,1.3)),MAT.hullDark,0,-0.5,0.05,sh); legs.push({th,sh}); }
+    P.legs=legs; P.muzzle=new THREE.Vector3(0,1.35,1.1);
   } else if(type==='juggernaut'){
     for(const s of [-1,1]){ mk(box(0.42,0.5,2.1),MAT.rubber,0.72*s,0.3,0,g); mk(box(0.46,0.1,2.15),MAT.hullDark,0.72*s,0.58,0,g); }
     mk(box(1.2,0.55,1.9),MAT.ir,0,0.62,0,g); mk(box(1.24,0.08,1.4),MAT.team[t],0,0.93,-0.1,g);
@@ -1940,7 +1965,7 @@ function buildBuildingModel(type,t){
 }
 function buildBuildingModel0(type,t){
   const g=new THREE.Group(), P={}; const def=BDEF[type], s=def.size; type=def.model||type;
-  mk(box(s-0.08,0.5,s-0.08),MAT.hullDark,0,-0.05,0,g);
+  mk(geo(`pad${s}`,()=>new RoundedBoxGeometry(s-0.08,0.5,s-0.08,3,0.24)),MAT.pad,0,-0.05,0,g);
   if(type==='cc'){
     mk(cyl(1.35,1.45,0.3,8),MAT.hullDark,0,0.3,0,g);
     mk(cyl(1.05,1.25,1.0,8),MAT.hull,0,0.9,0,g);
