@@ -2,7 +2,7 @@
    match's Durable Object, which relays player messages (see relay.js), and /ranked/... reaches the
    one Ladder Durable Object that runs the ranked queue and keeps everyone's rating (see ranked.js). */
 import { Relay } from './relay.js';
-import { Queue, Ladder as LadderStore, randCode } from './ranked.js';
+import { Queue, Ladder as LadderStore, randCode, seasonOf, mapFor, RACES } from './ranked.js';
 
 export class Room {
   constructor(state, env) { this.relay = new Relay(8); }
@@ -18,7 +18,6 @@ export class Room {
   }
 }
 
-const RACES = ['terran', 'fowl', 'ceph', 'void'];
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
 export class Ladder {
@@ -32,11 +31,24 @@ export class Ladder {
     let body = {}; if (request.method === 'POST') { try { body = await request.json(); } catch (e) { return json({ error: 'bad request' }, 400); } }
     if (path === '/ranked/me') {
       const p = await this.store.auth(body.id, body.secret, body.name); if (!p) return json({ error: 'sign-in failed' }, 403);
-      return json({ me: { ...this.store.pub(p), rank: p.games ? this.store.rank(p) : null } });
+      return json({ me: { ...this.store.pub(p), rank: p.games ? this.store.rank(p) : null, races: this.store.races(p.id) }, season: this.store.season() });
     }
     if (path === '/ranked/ladder') {
-      const p = this.store.get(String(url.searchParams.get('id') || ''));
-      return json({ top: this.store.board(50), me: p ? { ...this.store.pub(p), rank: p.games ? this.store.rank(p) : null } : null });
+      const p = this.store.get(String(url.searchParams.get('id') || '')), race = url.searchParams.get('race');
+      return json({ top: RACES.includes(race) ? this.store.raceBoard(race, 50) : this.store.board(50), race: RACES.includes(race) ? race : null, season: this.store.season(),
+        me: p ? { ...this.store.pub(p), rank: p.games ? this.store.rank(p) : null, races: this.store.races(p.id) } : null });
+    }
+    if (path === '/ranked/replay' && request.method === 'POST') {
+      const p = await this.store.auth(body.id, body.secret); if (!p) return json({ error: 'sign-in failed' }, 403);
+      const r = this.store.saveReplay(String(body.mid || ''), p.id, body.code, body.dur); return json(r, r.error ? 400 : 200);
+    }
+    if (path === '/ranked/replay') { const code = this.store.replay(String(url.searchParams.get('mid') || '')); return code ? json({ code }) : json({ error: 'no such replay' }, 404); }
+    if (path === '/ranked/replays') return json({ list: this.store.topReplays(20), season: this.store.season() });
+    if (path.startsWith('/social/')) {
+      const p = await this.store.auth(body.id, body.secret); if (!p) return json({ error: 'sign-in failed' }, 403);
+      if (path === '/social/find') { const f = this.store.findByName(body.name); return json({ player: f ? this.store.pub(f) : null }); }
+      if (path === '/social/invite') { const r = this.store.invite(p.id, String(body.to || ''), String(body.code || '')); return json(r, r.error ? 400 : 200); }
+      if (path === '/social/inbox') return json({ invites: this.store.inbox(p.id) });
     }
     if (path === '/ranked/result') {
       const p = await this.store.auth(body.id, body.secret); if (!p) return json({ error: 'sign-in failed' }, 403);
@@ -71,13 +83,13 @@ export class Ladder {
   }
   pairUp() {
     for (const [a, b] of this.queue.pairs(Date.now())) {
-      const mid = randCode(10), code = 'r' + randCode(11), seed = (Math.random() * 2 ** 31) | 0;
+      const mid = randCode(10), code = 'r' + randCode(11), seed = (Math.random() * 2 ** 31) | 0, map = mapFor(seasonOf(), mid);
       const [s0, s1] = Math.random() < 0.5 ? [a, b] : [b, a];
-      this.store.open(mid, s0.id, s1.id);
+      this.store.open(mid, s0.id, s1.id, Date.now(), [s0.race, s1.race], map);
       const races = [s0.race, s1.race], pa = this.store.pub(this.store.get(s0.id)), pb = this.store.pub(this.store.get(s1.id));
       for (const [e, side, foe] of [[s0, 0, pb], [s1, 1, pa]]) {
         const c = this.socks.get(e.id); if (!c) continue;
-        c.send({ t: 'match', mid, code, side, seed, races, foe: { id: foe.id, name: foe.name, rating: foe.rating, tier: foe.tier } }); c.close(); this.socks.delete(e.id);
+        c.send({ t: 'match', mid, code, side, seed, races, map, foe: { id: foe.id, name: foe.name, rating: foe.rating, tier: foe.tier } }); c.close(); this.socks.delete(e.id);
       }
     }
     if (this.queue.wait.size && !this.timer) this.timer = setInterval(() => { this.pairUp(); if (!this.queue.wait.size) { clearInterval(this.timer); this.timer = null; } }, 2000);
@@ -99,7 +111,7 @@ export default {
     const m = url.pathname.match(/^\/ws\/([a-z0-9][a-z0-9-]{0,47})$/);
     if (m) { const stub = env.ROOMS.get(env.ROOMS.idFromName(m[1])); return stub.fetch(request); }
     if (url.pathname === '/.well-known/assetlinks.json') return assetLinks(env);
-    if (url.pathname.startsWith('/ranked/')) return env.LADDER.get(env.LADDER.idFromName('ladder')).fetch(request);
+    if (url.pathname.startsWith('/ranked/') || url.pathname.startsWith('/social/')) return env.LADDER.get(env.LADDER.idFromName('ladder')).fetch(request);
     return env.ASSETS.fetch(request);
   }
 };

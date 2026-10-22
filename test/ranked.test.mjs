@@ -2,11 +2,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { Queue, Ladder, eloDelta, expected, tierOf, cleanName, REPORT_GRACE, MATCH_TTL, START } from '../src/ranked.js';
+import { Queue, Ladder, eloDelta, expected, tierOf, cleanName, REPORT_GRACE, MATCH_TTL, START, SEASON0, SEASON_LEN, seasonOf, softReset, mapFor, mapPool } from '../src/ranked.js';
 
 /* node:sqlite dressed up as a Durable Object's storage.sql */
 function memSql() { const db = new DatabaseSync(':memory:');
-  return { exec(q, ...b) { const st = db.prepare(q); const rows = /^\s*(SELECT|WITH)/i.test(q) ? st.all(...b) : (st.run(...b), []); return { toArray: () => rows }; } }; }
+  return { exec(q, ...b) { const st = db.prepare(q); const rows = /^\s*(SELECT|WITH|PRAGMA)/i.test(q) ? st.all(...b) : (st.run(...b), []); return { toArray: () => rows }; } }; }
 const SECRET = 'x'.repeat(24);
 async function two(L) { await L.auth('aaaaaaaaaaaa', SECRET, 'Ada'); await L.auth('bbbbbbbbbbbb', SECRET, 'Bo'); L.open('m1', 'aaaaaaaaaaaa', 'bbbbbbbbbbbb', 0); }
 
@@ -58,4 +58,34 @@ test('a player keeps their id only with the right secret, and only players in th
   assert.equal((await L.auth('aaaaaaaaaaaa', SECRET, 'Ada L')).name, 'Ada L');
   assert.equal(await L.auth('short', SECRET), null);
   await L.auth('cccccccccccc', SECRET, 'Cy'); assert.ok(L.report('m1', 'cccccccccccc', 'win').error);
+});
+
+test('seasons: a new season softly resets ratings and keeps a badge', async () => {
+  const L = new Ladder(memSql()), t1 = SEASON0 + 86400e3, t2 = SEASON0 + SEASON_LEN + 3600e3;
+  assert.equal(seasonOf(t1), 1); assert.equal(seasonOf(t2), 2); assert.equal(seasonOf(0), 1); assert.equal(softReset(1600), 1400);
+  await L.auth('aaaaaaaaaaaa', SECRET, 'Ada', t1); await L.auth('bbbbbbbbbbbb', SECRET, 'Bo', t1);
+  L.open('m1', 'aaaaaaaaaaaa', 'bbbbbbbbbbbb', t1, ['fowl', 'void'], 'rich');
+  L.report('m1', 'aaaaaaaaaaaa', 'win', t1); L.report('m1', 'bbbbbbbbbbbb', 'loss', t1);
+  assert.deepEqual(L.races('aaaaaaaaaaaa', 1), { fowl: { games: 1, wins: 1 } });
+  assert.deepEqual(L.raceBoard('fowl', 50, t1).map(p => [p.name, p.wins, p.losses]), [['Ada', 1, 0]]);
+  assert.deepEqual(L.raceBoard('void', 50, t1).map(p => [p.name, p.wins, p.losses]), [['Bo', 0, 1]]);
+  const a = L.get('aaaaaaaaaaaa', t2);
+  assert.equal(a.season, 2); assert.equal(a.rating, softReset(1224)); assert.equal(a.games, 0);
+  assert.deepEqual(L.pub(a).badges, [{ season: 1, tier: 'Iron', rating: 1224 }]);
+  assert.equal(L.board(50, t2).length, 0, 'nobody has played in the new season yet');
+  assert.ok(mapPool(1).includes(mapFor(1, 'm1')));
+});
+
+test('ranked replays and friend invites', async () => {
+  const L = new Ladder(memSql()); await two(L);
+  assert.ok(L.saveReplay('m1', 'cccccccccccc', 'ANDROREPLAY1:x', 60).error);
+  assert.ok(L.saveReplay('m1', 'aaaaaaaaaaaa', 'nope', 60).error);
+  assert.ok(L.saveReplay('m1', 'aaaaaaaaaaaa', 'ANDROREPLAY1:abc', 60).ok);
+  assert.equal(L.replay('m1'), 'ANDROREPLAY1:abc');
+  L.report('m1', 'aaaaaaaaaaaa', 'win', 10); L.report('m1', 'bbbbbbbbbbbb', 'loss', 20);
+  assert.deepEqual(L.topReplays().map(r => [r.a, r.b]), [['Ada', 'Bo']]);
+  assert.equal(L.findByName('ada').id, 'aaaaaaaaaaaa');
+  assert.ok(L.invite('aaaaaaaaaaaa', 'bbbbbbbbbbbb', 'ab12').ok); assert.ok(L.invite('aaaaaaaaaaaa', 'bbbbbbbbbbbb', 'not a code').error);
+  assert.deepEqual(L.inbox('bbbbbbbbbbbb').map(i => [i.name, i.code]), [['Ada', 'ab12']]);
+  assert.equal(L.inbox('bbbbbbbbbbbb').length, 0, 'an invite is delivered once');
 });

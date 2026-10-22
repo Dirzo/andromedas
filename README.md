@@ -13,15 +13,40 @@ Andromedas plays in landscape on phones and tablets, and opens with the Noobscru
 - The left bar grabs whole groups: **Workers**, **Army**, **Survey** and **Idle** workers (tap twice to jump to them). Tap unit icons in the bottom panel to keep just a few of them.
 - **Build** picks a worker and opens the build menu; tap the ground to move the building, then **Build here**. **Cancel** backs out of anything.
 
-On a phone the game goes fullscreen when a match starts, and it can be added to the home screen as an app (`public/manifest.webmanifest`).
+- The numbered **squad** buttons on the right: hold one to save the selection as that squad, tap to select it, tap again to jump to it.
+- The **production tray** above the command card shows every building that trains or researches, with its progress. Tap one to select it, tap again to jump to it.
+
+On a phone the game goes fullscreen when a match starts, and it can be added to the home screen as an app (`public/manifest.webmanifest`). On iPhone and iPad, use Safari's **Share → Add to Home Screen**; Settings shows the same hint.
+
+## Match options
+
+- **Classic** is the full game: level every enemy structure. **Rapid** is about 10 minutes: closer sites, a faster freighter and faster building, and the enemy command hub is the target. When the clock runs out, a side that leads clearly on kills (by cost) wins; otherwise it is sudden death, where the next structure to fall decides it, and after four more minutes the side with more structure left standing wins. Ranked matches are Rapid.
+- **Asteroids:** Standard, Ice field (cryo pockets everywhere), Deep core (seams and impact cores), Rich crust (metals near the surface) and Rough (twice the craters and spires). The rock is the same size on all of them.
+- **Opponent:** Easy, Normal, Hard (faster, bigger attacks, uses its powers and mega abilities) and Brutal (Hard, and its crews haul 30% more).
+- **Neutral objectives:** two relay beacons sit halfway between the bases. Hold one with combat units for 8 seconds to own it: you see around it and the freighter pays 10% more for each one you hold. Four wrecks pay gold, ore and titanium to the first unit that stands by one, alone, for 8 seconds.
+- **Mega abilities** (F): each of the nine mega units has one active ability, such as War cry, Shield dome or Carpet bomb. **Space Command powers** live on the command hub: Orbital strike (Z), Seismic charge (X) and Priority freight (C).
+- **Veterancy:** combat units are promoted at 3, 7 and 15 kills (Veteran, Elite, Hero), each rank adding 10% health and 5% damage. **Patrol** (Q) walks a unit back and forth, fighting on the way.
+
+## Replays, missions and your profile
+
+- Every match is saved on the device as a replay (the seed, the settings and every command; the simulation is deterministic, so it plays back exactly). **Replays** on the home screen lists the last 15: watch one with the fog lifted, at up to 8x, seek, switch sides, or copy its code to share. Ranked replays are uploaded, and the best ones this season are listed under **Top ladder games**.
+- The end screen has army and income graphs, **Rematch** (single player and missions) and **Watch replay**.
+- **Missions:** six short challenges on fixed asteroids, each worth up to three stars.
+- **Profile:** levels from experience, three daily quests (new each day at midnight UTC), and unlockable selection-ring colours and titles. It lives on the device. Matches where the playtest tools were used do not count.
+- **Friends:** add a friend by their ladder name and invite them; the match code waits in their inbox for half an hour.
+- **Online matches:** emotes (Say…) and map pings for your teammates (Ping, or G). If your connection drops, the match waits up to 60 seconds; reopen the game and tap **Rejoin** on the home screen, and it catches up from the server's copy of the match.
+
+## Settings
+
+Graphics, music, the studio intro, a colour-blind safe palette (blue against amber), interface size, a left-handed layout (minimap and command card swap sides), vibration on phones, and a 30 fps battery saver.
 
 ## Files
 
 - `public/index.html`: the whole game.
 - `src/worker.js`: the Worker. Serves `public/` and connects `/ws/<match>` to that match's Durable Object.
-- `src/relay.js`: the match relay itself (about 40 lines, no game logic).
+- `src/relay.js`: the match relay itself (no game logic). It also keeps each running match's command log, so a player who drops can rejoin and catch up.
 - `src/ranked.js`: ranked play: Elo maths, the matchmaking queue and match results, stored in the Ladder Durable Object's SQLite.
-- `test/ranked.test.mjs`: tests for the ranked logic (`node --test test/*.test.mjs`, Node 22 or newer).
+- `test/ranked.test.mjs`, `test/relay.test.mjs`: tests for the ranked logic, seasons, replays, invites and the relay (`node --test test/*.test.mjs`, Node 22 or newer).
 - `android/`: the Android app (see below). `.github/workflows/android.yml` builds it.
 - `wrangler.toml`: Cloudflare config (static assets, the two Durable Object bindings and their migrations).
 
@@ -44,6 +69,8 @@ On the home screen, tap **Ranked multiplayer**, pick a crew and a name, and tap 
 - Both screens report the result. Ratings move when the reports agree, or when only one report arrives within two minutes (the other player closed the game). If the reports disagree, nothing changes.
 - Surrendering, or leaving a match in progress, counts as a loss. If your opponent never connects, the match is called off with no rating change.
 - There are no accounts: the browser keeps a random player id and secret. Clearing the site's data starts a fresh ladder profile.
+- **Seasons** last four weeks, counted from 1 October 2026. At the start of a season ratings move halfway back to 1200 and records start over; your best tier from the last season stays as a badge. Each season has its own pool of three asteroids.
+- The ladder can be filtered by crew: it then lists players who played that crew this season, with their record on it.
 
 ## Android app
 
