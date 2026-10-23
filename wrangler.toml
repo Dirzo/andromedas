@@ -3,6 +3,12 @@ name = "andromedas"
 main = "src/worker.js"
 compatibility_date = "2025-06-01"
 
+# The Android app (android/): its package name, and the SHA-256 fingerprints of the keys that sign it
+# (the Play Console's app signing key, plus your upload key), comma-separated. Served at /.well-known/assetlinks.json.
+[vars]
+ANDROID_PACKAGE = "com.noobscrubgames.andromedas"
+ANDROID_CERT_SHA256 = ""
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
@@ -14,3 +20,12 @@ class_name = "Room"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Room"]
+
+# Ranked play: one Ladder object holds the matchmaking queue and every player's rating (SQLite).
+[[durable_objects.bindings]]
+name = "LADDER"
+class_name = "Ladder"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Ladder"]

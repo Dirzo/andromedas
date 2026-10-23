@@ -1,0 +1,57 @@
+/* Andromedas for Android: a Trusted Web Activity. The app opens the live website full screen in the
+   phone's Chrome, so it shares Chrome's storage for the site (ladder profile, settings) and every
+   website deploy updates the app too. Host and version come from gradle.properties / the command line. */
+plugins {
+    id 'com.android.application'
+}
+
+def host = (project.findProperty('andromedasHost') ?: 'andromedas.example.workers.dev').toString()
+def env = System.getenv()
+
+android {
+    namespace 'com.noobscrubgames.andromedas'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.noobscrubgames.andromedas'
+        minSdk 21
+        targetSdk 34
+        versionCode((project.findProperty('versionCode') ?: '1').toInteger())
+        versionName((project.findProperty('versionName') ?: '1.0').toString())
+
+        manifestPlaceholders = [hostName: host]
+        resValue 'string', 'hostName', host
+        resValue 'string', 'launchUrl', 'https://' + host + '/'
+        resValue 'string', 'assetStatements',
+            '[{ \\"relation\\": [\\"delegate_permission/common.handle_all_urls\\"],' +
+            '\\"target\\": {\\"namespace\\": \\"web\\", \\"site\\": \\"https://' + host + '\\"}}]'
+    }
+
+    signingConfigs {
+        release {
+            // CI writes the upload keystore here from repository secrets (see .github/workflows/android.yml)
+            if (env.ANDROID_KEYSTORE_PATH) {
+                storeFile file(env.ANDROID_KEYSTORE_PATH)
+                storePassword env.ANDROID_KEYSTORE_PASSWORD
+                keyAlias env.ANDROID_KEY_ALIAS
+                keyPassword env.ANDROID_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (env.ANDROID_KEYSTORE_PATH) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}
