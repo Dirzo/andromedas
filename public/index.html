@@ -114,8 +114,6 @@ body.locked, body.locked *{ cursor:none !important; }
 .portrait .pic::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(120,200,255,.05) 0 1px,transparent 1px 3px); box-shadow:inset 0 0 18px rgba(11,15,36,.7); }
 .info .rank{ font-family:'Fredoka'; font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--lamp); margin-top:-2px; }
 .vrow .vn small{ color:var(--dim); font-size:11.5px; margin-left:4px; }
-#subtitle{ position:fixed; left:50%; bottom:calc(var(--console-h) + 22px); transform:translate(-50%,6px); z-index:7; max-width:min(640px,90vw); padding:7px 14px; background:rgba(11,15,36,.82); border-left:3px solid var(--lamp); font-size:15px; opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; }
-#subtitle.show{ opacity:1; transform:translate(-50%,0); } #subtitle b{ color:var(--lamp); font-family:'Fredoka'; font-size:16px; letter-spacing:.02em; }
 .info .sub{ color:var(--dim); font-size:13px; line-height:1.35; max-width:60ch; }
 .stats{ display:flex; gap:18px; flex-wrap:wrap; }
 .stat{ display:flex; flex-direction:column; }
@@ -503,7 +501,6 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
 </div>
 
 <div id="tip"></div>
-<div id="subtitle" aria-live="polite"></div>
 <div id="tutor" role="dialog" aria-label="Tutorial"><div class="tut-top"><span id="tut-step">Step 1</span><span id="tut-dots"></span></div>
   <h3 id="tut-title">Welcome</h3><p id="tut-text"></p>
   <div class="tut-btns"><button id="tut-next">Skip step</button><button id="tut-exit">Exit tutorial</button></div></div>
@@ -519,7 +516,6 @@ body.touch #quick .qbtn{ min-height:44px; min-width:96px; font-size:15px; }
 <div id="rotateNote"><b>Turn your phone sideways</b><span>Andromedas plays in landscape.</span></div>
 <div id="optMenu" role="dialog" aria-label="Options"><h4>Options</h4>
   <label><input type="checkbox" id="opt-vlist"><span>List selected units vertically<small>Shows a row per unit with its name and health instead of the icon grid.</small></span></label>
-  <label><input type="checkbox" id="opt-voice"><span>Unit voices<small>Your units speak when selected, ordered, trained or hurt. Lines also appear as subtitles.</small></span></label>
   <label><input type="checkbox" id="opt-edge"><span>Edge scrolling<small>Pan when the pointer touches the screen edge. Arrow keys, middle-drag and the minimap always work.</small></span></label>
 </div>
 <div id="pauseNote">Paused</div>
@@ -3901,7 +3897,7 @@ function applyDamage(e,dmg,a){
   if(e.dead) return; if(a && e.kind==='bld' && a.def && a.def.bldMul) dmg*=a.def.bldMul; if(e.kind==='unit' && inkClouds.length && isCeph(e)) dmg*=inkMul(e); if(e.buffs) dmg*=buffMul(e,'arm'); e.hp-=dmg; e.hitT=gameTime;
   if(e.kind==='unit' && e.hp>0 && isCeph(e)) inkUp(e);
   if(e.team===ME){ lastAlert=e.p.clone(); }
-  if(e.team===ME && gameTime-lastAttackAlert>18){ lastAttackAlert=gameTime; toast(e.kind==='bld'?`Your ${e.def.name.toLowerCase()} is under attack`:'Your crew is under attack','warn'); ping(e.pos,'#ff5b3a'); sfx('alert'); buzz([40,60,40]); if(e.kind==='unit') voiceLine(e,'hurt',true); }
+  if(e.team===ME && gameTime-lastAttackAlert>18){ lastAttackAlert=gameTime; toast(e.kind==='bld'?`Your ${e.def.name.toLowerCase()} is under attack`:'Your crew is under attack','warn'); ping(e.pos,'#ff5b3a'); sfx('alert'); buzz([40,60,40]); }
   if(e.kind==='unit' && a && isAlive(a) && e.def.dmg && canHit(e,a) && e.type!=='worker' && (e.order.type==='idle' || ((e.order.type==='amove'||e.order.type==='patrol') && !e.order.eng))){ if(e.order.type==='amove'||e.order.type==='patrol') e.order.eng=a; else e.order={type:'attack',tgt:a,auto:true,home:e.p.clone()}; }
   if(aiTeams[e.team] && a && isAlive(a) && blds.some(b=>!b.dead&&b.team===e.team&&distB(e.p,b)<16)) AIS[e.team].threat={p:e.p.clone(),t:gameTime};
   if(e.hp<=0) kill(e,a);
@@ -3960,7 +3956,7 @@ const ABIL={
 };
 const abilReady=(u)=>!!ABIL[u.type] && gameTime>=(u.abT||0) && !(u.hatch>0);
 function castAbility(u,p){ const A=ABIL[u.type]; if(!A||u.dead||!abilReady(u)) return false; if(A.aim && (!p||gd(u.p,p)>A.reach)) return false;
-  u.abT=gameTime+A.cd; A.cast(u,p); if(u.team===ME){ voiceLine(u,'attack',true); uiDirty=true; } return true; }
+  u.abT=gameTime+A.cd; A.cast(u,p); if(u.team===ME) uiDirty=true; return true; }
 /* Space Command powers, called from a finished command hub. Each has its own cooldown */
 const POW={
   strike:{ name:'Orbital strike', key:'Z', icon:'strike', cost:{gold:250}, cd:90, aim:true, text:'A lance from orbit hits a 4-wide circle for 140 damage, 2.5 seconds after you call it. You need to see the spot.' },
@@ -4126,7 +4122,7 @@ function spawnFrom(b,type){
   const tp=b.rally?b.rally.p:offsetDir(b.p,tangentToward(b.p,b.team?PB:EB),b.s);
   let best=-1, bd=1e9; for(const c of b.ring){ if(!passable(c)) continue; const d=gdc(c,tp); if(d<bd){ bd=d; best=c; } }
   if(best<0) best=nearestPassable(b.cells[0]);
-  const u=spawnUnit(type,b.team,cvec(best)); if(u.def.mega) P[b.team].megas++; if(b.team===ME) voiceLine(u,'ready'); faceDir(u,tp,1); if(raceOf(b.team)==='fowl') layEgg(u); else if(raceOf(b.team)==='ceph') layJelly(u); else if(raceOf(b.team)==='void') layRift(u);
+  const u=spawnUnit(type,b.team,cvec(best)); if(u.def.mega) P[b.team].megas++; faceDir(u,tp,1); if(raceOf(b.team)==='fowl') layEgg(u); else if(raceOf(b.team)==='ceph') layJelly(u); else if(raceOf(b.team)==='void') layRift(u);
   if(b.rally){ const r=b.rally;
     if(r.site>=0 && type==='worker') orderMine(u,r.site,-1);
     else if(r.tgt && isAlive(r.tgt) && r.tgt.team!==b.team) orderAttack(u,r.tgt);
@@ -4374,7 +4370,7 @@ const cam={ t:PB.clone(), h:tangentToward(PB,V3().set(0,1,0).add(PB)), dist:26, 
 const camTP=V3();
 const keys=new Set(); let mouseX=innerWidth/2, mouseY=innerHeight/2, mouseIn=false;
 /* player options, remembered in this browser */
-const opts={ vlist:false, edge:true, voice:true }; try{ Object.assign(opts,JSON.parse(localStorage.getItem('andro-opts')||'{}')); }catch(e){}
+const opts={ vlist:false, edge:true }; try{ Object.assign(opts,JSON.parse(localStorage.getItem('andro-opts')||'{}')); }catch(e){}
 function saveOpts(){ try{ localStorage.setItem('andro-opts',JSON.stringify(opts)); }catch(e){} }
 const PAN_EDGE=34, PAN_EDGE_B=26, PAN_EDGE_WIN=10; // edge zones in px: sides and top, a strip above the console, and the very bottom of the window
 let consoleTop=innerHeight-190;
@@ -4455,7 +4451,7 @@ const siteAt=(c)=> c>=0 && siteOf[c]>=0 && explored[c] ? sites[siteOf[c]] : null
    ===================================================================== */
 let mode=null, cardPage='main';
 const groups={};
-function setSel(list,site=-1,keepPool){ if(!keepPool) pickPool=null; sel=list.filter(e=>!e.dead); selSite=site; cardPage='main'; mode=null; clearGhost(); uiDirty=true; xrayDirty=true; if(sel.length) sfx('select'); const f=sel.find(x=>x.kind==='unit'&&x.team===ME); if(f&&started) voiceLine(f,'select'); }
+function setSel(list,site=-1,keepPool){ if(!keepPool) pickPool=null; sel=list.filter(e=>!e.dead); selSite=site; cardPage='main'; mode=null; clearGhost(); uiDirty=true; xrayDirty=true; if(sel.length) sfx('select'); }
 const ownUnits=()=>sel.filter(e=>e.team===ME&&e.kind==='unit'&&!e.dead);
 function formation(list,p,fn){
   const n=list.length, side=Math.ceil(Math.sqrt(n)), gap=0.95; const r=camRight(), f=tangentToward(p,_t3.copy(cam.h).add(p));
@@ -4474,8 +4470,7 @@ function smartCommand(sx,sy){
     if(b && b.def.trains){ const s=h.c>=0&&siteOf[h.c]>=0&&sites[siteOf[h.c]].revealed?siteOf[h.c]:-1; issue({t:'rally',b:b.id,p:v3a(h.p),s,e:h.unit&&h.unit.team!==ME?h.unit.id:0}); marker(h.p,0xf2b04a); sfx('order'); }
     return; }
   const enemy=h.unit&&h.unit.team!==ME?h.unit:(h.bld&&h.bld.team!==ME?h.bld:null);
-  if(enemy){ issue({t:'atk',u:ids(own),e:enemy.id}); marker(enemy.p,0xff5b3a); sfx('order'); voiceLine(own.find(u=>u.def.dmg)||own[0],'attack'); return; }
-  voiceLine(own[0],'move');
+  if(enemy){ issue({t:'atk',u:ids(own),e:enemy.id}); marker(enemy.p,0xff5b3a); sfx('order'); return; }
   const rest=[]; const site=h.c>=0?siteAt(h.c):null;
   const surveyors=own.filter(u=>u.type==='surveyor'), workers=own.filter(u=>u.type==='worker'), others=own.filter(u=>u.type!=='surveyor'&&u.type!=='worker');
   if(site){
@@ -4499,7 +4494,6 @@ function modeClick(sx,sy){
   if(mode.type==='ping'){ sendPing(h.p); mode=null; uiDirty=true; return; }
   const site=h.c>=0?siteAt(h.c):null;
   if(own.length && !(mode.type==='rsurvey'||mode.type==='rscan')) issue({t:'man',u:ids(own)});
-  if(own.length) voiceLine(own.find(u=>u.def.dmg)||own[0],mode.type==='attack'?'attack':'move');
   if(mode.type==='attack'){ const enemy=h.unit&&h.unit.team!==ME?h.unit:(h.bld&&h.bld.team!==ME?h.bld:null);
     if(enemy) issue({t:'atk',u:ids(own),e:enemy.id}); else { issue(mvCmd(own,h.p,true)); marker(h.p,0xff5b3a); } }
   else if(mode.type==='survey'||mode.type==='scan'){
@@ -4928,71 +4922,32 @@ function hideTip(){ $('#tip').style.display='none'; }
 
 const esc=(t)=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* =====================================================================
-   Characters: every unit has a name, a live portrait and a voice.
+   Characters: every unit has a name and a live portrait.
    Names come from the unit's id and the match seed, so every player in a match sees the same names.
-   Voice lines use the browser's speech synthesiser, pitched and paced per race, with subtitles.
    ===================================================================== */
 const CHAR={
   terran:{ ranks:{ marine:'Pvt.', breacher:'Cpl.', ranger:'Spc.', grenadier:'Cpl.', rover:'Drv.', skiff:'Lt.', mortar:'Gnr.', walker:'Capt.', surveyor:'Surveyor' },
     first:['Reyes','Okafor','Lindqvist','Tanaka','Moreau','Kowalski','Haddad','Nguyen','Brennan','Adeyemi','Ivanova','Castillo','Park','Mbeki','Duval','Sato','Abernathy','Ostrowski','Vance','Achterberg','Quinn','Delgado','Holt','Rasmussen'],
-    worker:(h)=>`Drone ${['D','K','M','R','T'][h%5]}-${10+h%90}`, mega:['Colonel "Bulwark" Hayes','Big Mother','The Iron Senator','Old Thunder','Major Tomsk','Lady Halcyon','The Warden','Unit Zero'],
-    pitch:1.0, rate:1.03,
-    lines:{ army:{ select:['Standing by.','What\'s the job, Commander?','Talk to me.','Ready when you are.','Eyes open.','Loaded and listening.'], move:['Moving out.','On my way.','Copy that.','Heading there now.','Roger, relocating.'], attack:['Weapons hot!','Engaging!','Light them up!','Target acquired.','Contact! Opening fire.'], ready:['Reporting for duty.','Boots on the rock.','Suited up and ready.'], hurt:['Taking fire!','We\'re hit! Need support!','They\'re on us!'] },
-      worker:{ select:['Drill\'s warm.','Need something dug?','This rock won\'t dig itself.','Hauler standing by.'], move:['On it.','Hauling.','Right away.','Rolling.'], ready:['Drone online.','Another pair of arms, reporting.'] },
-      survey:{ select:['Scanner online.','Reading the rock.','Signals look interesting.'], move:['Plotting a course.','Survey kit packed.'], ready:['Surveyor ready. Let\'s see what\'s down there.'] },
-      mega:{ select:['The ground trembles.','Big guns, reporting.','Point me at them.'], move:['Clear the way.','Advancing.'], attack:['Obliterate them.','Full power!'], ready:['The forge has delivered. I am ready.'] } } },
+    worker:(h)=>`Drone ${['D','K','M','R','T'][h%5]}-${10+h%90}`, mega:['Colonel "Bulwark" Hayes','Big Mother','The Iron Senator','Old Thunder','Major Tomsk','Lady Halcyon','The Warden','Unit Zero'], },
   fowl:{ ranks:{ marine:'Pvt.', breacher:'Sgt.', ranger:'Spc.', grenadier:'Cpl.', rover:'Rider', skiff:'Flt. Lt.', mortar:'Gunner', walker:'Sir', surveyor:'Hoot' },
     first:['Cluckworth','Henrietta','Pecksalot','Featherby','Drumstick','Nugget','Eggbert','Clucky McCluckface','Beaky','Wingston','Pip','Roostervelt','Plume','Goosey','Chirpson','Gizzard','Maran','Buff Orpington','Sussex','Ruffles','Scratch','Omelette','Waddle','Talonsworth'],
     worker:(h)=>`${['Hen','Pullet','Biddy','Clucker'][h%4]} #${1+h%99}`, mega:['Grand Dame Featherstone','The Colossal Cluck','Lord Wattle III','Mother Goose','The Phoenix Queen','General Drumstick','His Royal Beakness','Old Speckled'],
-    geese:['The Goose','Sir Honksalot','Lord Honkington','Gander the Grey','Big Goose','Goosifer','Honk Norris','Mother Goose\'s Problem Child','The Noobscrub Goose','Waddles of Doom'],
-    pitch:1.65, rate:1.22,
-    lines:{ army:{ select:['Bawk? Ready!','Feathers fluffed, Commander!','Cluck cluck, what\'s up?','Egg-cellent timing!','I\'m all ears. Well, ear holes.','Bok bok!'], move:['Flapping over!','Beak first!','Cluck, on the way!','Wings out!','Waddling with purpose!'], attack:['Peck them to pieces!','Fowl play!','Ruffle their feathers!','BAWK! Charge!','Omelette time!'], ready:['Freshly hatched and ready!','Out of the shell, into the fight!'], hurt:['They\'re plucking us!','Feathers everywhere! Help!','Cluck! Under attack!'] },
-      worker:{ select:['Scratching for ore!','Peck, peck, dig.','Got seeds? No? Ore then.'], move:['Pecking away!','Scratch that, on it!','Cluck, hauling!'], ready:['Hatched and ready to scratch!'] },
-      survey:{ select:['Whooo needs a survey?','I see everything down there.','Hoo hoo. Listening.'], move:['Gliding over.','Silent wings, moving.'], ready:['The night-eyes are open.'] },
-      goose:{ select:['HONK.','Honk? HONK.','The goose is listening. Unfortunately.','You again.'], move:['Waddling with menace.','HONK HONK, coming through!','Out of my way, hens.'], attack:['HONK!!','Goose them!','Wings out, beak first!','This is my rock now.'], ready:['The goose has entered the asteroid.','HONK. I have arrived.'], hurt:['They plucked the goose! Big mistake.','HOOONK! Back me up!'] },
-      mega:{ select:['The flock follows me.','Behold the apex of poultry.','BAWK. Speak.'], move:['Make way for greatness!','Strutting forward.'], attack:['Feel the fury of the flock!','CLUCK DESTRUCTION!'], ready:['The golden egg has hatched!'] } } },
+    geese:['The Goose','Sir Honksalot','Lord Honkington','Gander the Grey','Big Goose','Goosifer','Honk Norris','Mother Goose\'s Problem Child','The Noobscrub Goose','Waddles of Doom'], },
   ceph:{ ranks:{ marine:'Squidling', breacher:'Bruiser', ranger:'Marksquid', grenadier:'Bomber', rover:'Dasher', skiff:'Jet-pilot', mortar:'Shellgunner', walker:'Lancer', surveyor:'Seer' },
     first:['Inkwell','Squidney','Octavia','Tentaclés','Calamara','Sepia','Barnaby','Nautica','Glubson','Mollie','Siphon','Kraken Jr.','Coral','Bubbles','Ammo-nite','Quill','Marlo','Suckerton','Loligo','Pearl','Chromia','Abyssa','Tide','Murk'],
-    worker:(h)=>`Octoworker ${String.fromCharCode(65+h%26)}${h%10}`, mega:['The Leviathan Queen','Grandmother Ink','Abyssal Lord Voon','The Colossal Hug','Ten-Arms Tarrow','She Who Squeezes','The Deep One','Captain Kraaken'],
-    pitch:0.72, rate:0.9,
-    lines:{ army:{ select:['Blub. Listening.','All eight arms at your service.','Ink ready, Commander.','Glub. What depth?','Suckers ready.'], move:['Jetting over.','Flowing that way.','Swim, swim.','Tentacles moving.'], attack:['Ink them!','Wrap them up!','Squeeze!','From the deep, we strike!'], ready:['Hatched from the brood. Blub.','Fresh from the reef.'], hurt:['We\'re leaking! Help!','Ink! Ink! We\'re under attack!','They\'re tearing at our arms!'] },
-      worker:{ select:['Eight arms, one pick.','Prying it loose.','Blub. Dig where?'], move:['Crawling over.','Carrying, carrying.','Glub, on it.'], ready:['Another pair of arms. Well, four pairs.'] },
-      survey:{ select:['The rock changes colour for me.','Reading the currents below.','My skin tingles. Metal.'], move:['Drifting there.','Colours shifting, moving.'], ready:['The cuttlefish sees.'] },
-      mega:{ select:['The abyss answers.','I am the deep.','Speak, small one.'], move:['The tide rises.','I move like the ocean.'], attack:['Drown them in ink!','Crush!'], ready:['From the trench, I rise.'] } } },
+    worker:(h)=>`Octoworker ${String.fromCharCode(65+h%26)}${h%10}`, mega:['The Leviathan Queen','Grandmother Ink','Abyssal Lord Voon','The Colossal Hug','Ten-Arms Tarrow','She Who Squeezes','The Deep One','Captain Kraaken'], },
   void:{ ranks:{ marine:'Stalker', breacher:'Reaver', ranger:'Deadeye', grenadier:'Slinger', rover:'Houndmaster', skiff:'Wing', mortar:'Spitter', walker:'Gazer', surveyor:'Seer' },
     first:['Skrath','Vex\'ka','Zhissa','Kaalen','Thrask','Ssylvor','Nyxa','Grazz','Ixtal','Vorrek','Shael','Krin','Zarth','Ulkiss','Rhessa','Tsuul','Harrok','Siv','Drazhi','Maw','Ykkra','Solth','Vesh','Karnis'],
-    worker:(h)=>`Thrall ${['Sk','Zz','Kr','Th'][h%4]}-${1+h%64}`, mega:['Apex Vharr the Endless','The Hunger','Broodmother Szzara','Kral Who Devours','The Eclipse','Ssovereign Ix','Old Fang','The Hollow King'],
-    pitch:0.3, rate:0.82,
-    lines:{ army:{ select:['Ssspeak.','The hunt waits.','We are listening, Alpha.','Sssomething to kill?','The void hums.'], move:['We ssslither.','Through the dark.','Unseen, we go.','Moving. Hunting.'], attack:['Feed!','Tear them apart!','Blood for the brood!','Ssstrike!'], ready:['Born from the rift.','Hungry. Ready.'], hurt:['The prey bites back!','We bleed! Sssupport!','Ambush! Hunters, to me!'] },
-      worker:{ select:['Thrall obeys.','Dig. Always dig.','Yesss, master?'], move:['Digging, master.','The thrall goes.'], ready:['A thrall crawls from the rift.'] },
-      survey:{ select:['The void whispers where metal sleeps.','I taste the rock.'], move:['Following the whispers.'], ready:['The seer awakens.'] },
-      mega:{ select:['Kneel before the apex.','I devour worlds.','Sssmall thing. Speak.'], move:['The world shakes beneath me.'], attack:['Consume them all!','Nothing escapes!'], ready:['The altar has given birth to hunger.'] } } },
+    worker:(h)=>`Thrall ${['Sk','Zz','Kr','Th'][h%4]}-${1+h%64}`, mega:['Apex Vharr the Endless','The Hunger','Broodmother Szzara','Kral Who Devours','The Eclipse','Ssovereign Ix','Old Fang','The Hollow King'], },
 };
-function unitClass(u){ return u.def.mega?'mega':u.type==='worker'?'worker':u.type==='surveyor'?'survey':(u.type==='breacher'&&raceOf(u.team)==='fowl')?'goose':'army'; }
 function unitHash(u,n){ return Math.floor(hash3(u.id,u.team*7+3,n)*1e6); }
 function nameOf(e){ if(!e||e.kind!=='unit') return e?e.def.name:''; if(e.pname) return e.pname;
   const C=CHAR[raceOf(e.team)]||CHAR.terran, h=unitHash(e,17);
   const nm=e.def.mega?C.mega[h%C.mega.length]:e.type==='worker'?C.worker(h):(C.geese&&e.type==='breacher')?C.geese[h%C.geese.length]:`${C.ranks[e.type]||'Pvt.'} ${C.first[h%C.first.length]}`;
   return e.pname=nm; }
-/* voices */
-let enVoices=[]; function loadVoices(){ try{ const v=speechSynthesis.getVoices(); enVoices=v.filter(x=>/^en/i.test(x.lang)); if(!enVoices.length) enVoices=v; }catch(e){} }
-try{ if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; } }catch(e){}
-let lastVoiceT=0, lastVoiceKey='', subtitleT=null;
-function voiceLine(u,kind,force){
-  if(!u||u.kind!=='unit'||u.team!==ME||SIM.quiet) return;
-  const now=performance.now(); if(!force && now-lastVoiceT<(kind==='select'?900:1400)) return;
-  const C=CHAR[raceOf(u.team)]||CHAR.terran, cls=unitClass(u), pool=(C.lines[cls]&&C.lines[cls][kind])||C.lines.army[kind]; if(!pool||!pool.length) return;
-  let text=pool[Math.floor(Math.random()*pool.length)]; if(pool.length>1&&lastVoiceKey===text) text=pool[(pool.indexOf(text)+1)%pool.length]; lastVoiceKey=text; lastVoiceT=now;
-  showSubtitle(nameOf(u),text); portrait.talk=Math.min(2.2,0.6+text.length*0.05);
-  if(!opts.voice) return;
-  try{ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const ut=new SpeechSynthesisUtterance(text);
-    const h=unitHash(u,5), big=u.def.mega?0.75:1; ut.pitch=clamp(C.pitch*big*(0.92+(h%17)/100),0.1,2); ut.rate=clamp(C.rate*(0.95+(h%11)/100)*(u.def.mega?0.92:1),0.5,1.6); ut.volume=0.85;
-    if(enVoices.length) ut.voice=enVoices[h%enVoices.length]; speechSynthesis.speak(ut); }catch(e){}
-}
-function showSubtitle(who,text){ const el=$('#subtitle'); if(!el) return; el.innerHTML=''; const b=document.createElement('b'); b.textContent=who+': '; el.appendChild(b); el.appendChild(document.createTextNode(text)); el.classList.add('show'); clearTimeout(subtitleT); subtitleT=setTimeout(()=>el.classList.remove('show'),2600); }
 /* live portrait: the selected unit or building, rendered by its own small renderer */
 const PORTRAIT_PX=56;
-const portrait={ r:null, scene:null, cam:null, pivot:null, forE:null, canvas:null, t:0, talk:0, acc:0, h:1 };
+const portrait={ r:null, scene:null, cam:null, pivot:null, forE:null, canvas:null, t:0, acc:0, h:1 };
 function initPortrait(){ if(portrait.r!==null) return portrait.r;
   try{ const cv=document.createElement('canvas'); cv.className='pcan'; const r=new THREE.WebGLRenderer({ canvas:cv, alpha:true, antialias:false });
     /* a small pixel-art portrait, shown pixelated like the Siege of Legends champion cards */
@@ -5010,8 +4965,8 @@ function portraitFor(e){ if(!initPortrait()) return; if(portrait.forE===e) retur
   const h=Math.max(size.y,size.x*0.8,size.z*0.8,0.3); portrait.h=h; const d=h*(e.kind==='unit'?1.85:2.3);
   portrait.cam.position.set(d*0.42,h*0.72,d); portrait.cam.lookAt(0,h*(e.kind==='unit'?0.5:0.42),0); portrait.t=0; }
 function updatePortrait(dt){ const P_=portrait; if(!P_.r||!P_.forE||!P_.canvas.isConnected) return; P_.acc+=dt; if(P_.acc<1/30) return; const step=P_.acc; P_.acc=0;
-  P_.t+=step; P_.talk=Math.max(0,P_.talk-step);
-  P_.pivot.rotation.y=Math.sin(P_.t*0.5)*0.55-0.25; const talking=P_.talk>0?Math.abs(Math.sin(P_.t*14))*0.04:0; P_.pivot.position.y=Math.sin(P_.t*1.6)*0.02*P_.h+talking*P_.h; P_.pivot.scale.setScalar(1+talking*0.5);
+  P_.t+=step;
+  P_.pivot.rotation.y=Math.sin(P_.t*0.5)*0.55-0.25; P_.pivot.position.y=Math.sin(P_.t*1.6)*0.02*P_.h;
   fogU.uNoFog.value=1; const o0=outlineU.uOut.value.clone(); outlineU.uOut.value.set(2/PORTRAIT_PX,2/PORTRAIT_PX); try{ P_.r.render(P_.scene,P_.cam); }catch(e){} outlineU.uOut.value.copy(o0); fogU.uNoFog.value=0; }
 
 let panelSig='';
@@ -5101,11 +5056,10 @@ for(const b of document.querySelectorAll('#quick .qbtn[data-k]')) b.addEventList
 function renderQuick(){ const el=$('#quick'); if(!el) return; el.style.display=started&&!over?'flex':'none'; if(!started) return;
   for(const k in quickCat){ const n=units.filter(u=>!u.dead&&u.team===ME&&quickCat[k](u)).length; const c=$('#q-'+k); if(c&&c.textContent!==String(n)) c.textContent=n; } }
 /* options menu */
-function syncOpts(){ $('#opt-vlist').checked=opts.vlist; $('#opt-edge').checked=opts.edge; $('#opt-voice').checked=opts.voice; }
+function syncOpts(){ $('#opt-vlist').checked=opts.vlist; $('#opt-edge').checked=opts.edge; }
 $('#optBtn').addEventListener('click',e=>{ e.stopPropagation(); const m=$('#optMenu'); m.classList.toggle('show'); syncOpts(); });
 $('#optMenu').addEventListener('click',e=>e.stopPropagation());
 document.addEventListener('pointerdown',e=>{ if(!e.target.closest('#optMenu')&&!e.target.closest('#optBtn')) $('#optMenu').classList.remove('show'); });
-$('#opt-voice').addEventListener('change',e=>{ opts.voice=e.target.checked; saveOpts(); try{ if(!opts.voice) speechSynthesis.cancel(); }catch(err){} });
 $('#opt-vlist').addEventListener('change',e=>{ opts.vlist=e.target.checked; saveOpts(); panelSig=''; renderPanel(); });
 $('#opt-edge').addEventListener('change',e=>{ opts.edge=e.target.checked; saveOpts(); edgeLatch.t=0; toast(opts.edge?'Edge scrolling on':'Edge scrolling off. Pan with the arrow keys, middle-drag or the minimap.','market'); });
 syncOpts();
